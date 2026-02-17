@@ -1,0 +1,105 @@
+# ===========================
+# CRITICAL SECURITY FILES
+# ===========================
+# Environment variables (contains API keys)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env
+**/.env
+
+# ===========================
+# PYTHON
+# ===========================
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+backend/venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyCharm
+.idea/
+
+# Pytest
+.pytest_cache/
+
+# ===========================
+# NODE.JS / NEXT.JS
+# ===========================
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Next.js build output
+.next/
+out/
+
+# Production build
+build/
+
+# ===========================
+# OPERATING SYSTEM
+# ===========================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ===========================
+# IDE & EDITORS
+# ===========================
+.vscode/
+*.swp
+*.swo
+*~
+
+# ===========================
+# LOGS & TEMPORARY FILES
+# ===========================
+*.log
+logs/
+*.tmp
+*.temp
+
+# ===========================
+# PROJECT-SPECIFIC
+# ===========================
+# Test files
+test_*.py
+debug_*.py
+analysis.json
+analysis_output.txt
