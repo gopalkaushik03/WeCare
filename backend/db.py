@@ -25,16 +25,20 @@ from typing import AsyncGenerator
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
-load_dotenv(override=True)
+load_dotenv()
 
 # ---------------------------------------------------------------------------
-# Configuration
+# Configuration — loaded strictly from environment variables. No hardcoded
+# fallback for MONGODB_URI to ensure secrets are never baked into source code.
 # ---------------------------------------------------------------------------
-MONGODB_URI: str = os.getenv(
-    "MONGODB_URI",
-    "mongodb+srv://gopalkaushik121_db_user:gopal%40bcs80003@wecare.dfo00jl.mongodb.net/?appName=WeCare",
-)
+MONGODB_URI: str | None = os.getenv("MONGODB_URI")
 MONGODB_DB: str = os.getenv("MONGODB_DB", "wecare")
+
+if not MONGODB_URI:
+    raise RuntimeError(
+        "MONGODB_URI environment variable is not set. "
+        "Copy backend/.env.example to backend/.env and fill in your credentials."
+    )
 
 # ---------------------------------------------------------------------------
 # Singleton client – created once at startup, closed at shutdown.
