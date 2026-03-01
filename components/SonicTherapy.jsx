@@ -1,94 +1,169 @@
 "use client";
 import { useState, useEffect } from "react";
-import { PlayCircle, PauseCircle, Volume2, Headphones } from "lucide-react";
+import { Headphones, Music2, ChevronRight, ExternalLink } from "lucide-react";
 import { useMood } from "@/context/MoodContext";
-import dynamic from "next/dynamic";
+import { motion, AnimatePresence } from "framer-motion";
 
-const ReactPlayer = dynamic(() => import("react-player"), { ssr: false });
-
-// Valid YouTube IDs
-const MOOD_VIDEOS = {
-    happy: "https://www.youtube.com/watch?v=5qap5aO4i9A",
-    calm: "https://www.youtube.com/watch?v=jfKfPfyJRdk", // Lofi Girl
-    neutral: "https://www.youtube.com/watch?v=jfKfPfyJRdk",
-    sad: "https://www.youtube.com/watch?v=tfBVp0Zi2iE",
-    anxious: "https://www.youtube.com/watch?v=DWcJFNfaw9c",
+// Spotify playlist IDs + metadata per mood
+const MOOD_PLAYLISTS = {
+    happy: {
+        id: "37i9dQZF1DXdPec7aLTmlC",
+        label: "Happy Hits",
+        desc: "Feel-good energy to keep you glowing ☀️",
+        color: "from-yellow-500/20 to-amber-400/10",
+        accent: "text-yellow-400",
+        border: "border-yellow-500/20",
+    },
+    calm: {
+        id: "37i9dQZF1DWZqd5JICZI0u",
+        label: "Deep Calm",
+        desc: "Breathe slow, drift easy 🌿",
+        color: "from-teal-500/20 to-cyan-400/10",
+        accent: "text-teal-400",
+        border: "border-teal-500/20",
+    },
+    neutral: {
+        id: "37i9dQZF1DXcBWIGoYBM5M",
+        label: "Lofi Beats",
+        desc: "Focus mode, steady rhythm 🎧",
+        color: "from-cyan-500/20 to-blue-400/10",
+        accent: "text-cyan-400",
+        border: "border-cyan-500/20",
+    },
+    sad: {
+        id: "37i9dQZF1DX7qK8ma5wgG1",
+        label: "Gentle Comfort",
+        desc: "It's okay to feel — you're not alone 💙",
+        color: "from-blue-500/20 to-indigo-400/10",
+        accent: "text-blue-400",
+        border: "border-blue-500/20",
+    },
+    anxious: {
+        id: "37i9dQZF1DWZqd5JICZI0u",
+        label: "Calm the Mind",
+        desc: "Let the sound quiet the noise 🫶",
+        color: "from-purple-500/20 to-violet-400/10",
+        accent: "text-purple-400",
+        border: "border-purple-500/20",
+    },
 };
 
+// Fallback order so we always have a valid playlist
+const getMoodConfig = (rawMood) =>
+    MOOD_PLAYLISTS[rawMood] || MOOD_PLAYLISTS.neutral;
+
 export default function SonicTherapy() {
-    const { mood } = useMood();
-    const [isPlaying, setIsPlaying] = useState(false);
+    const { rawMood } = useMood();
     const [mounted, setMounted] = useState(false);
-    const [url, setUrl] = useState(MOOD_VIDEOS.neutral);
+    const [key, setKey] = useState(0); // force iframe reload on mood change
 
     useEffect(() => {
         setMounted(true);
     }, []);
 
     useEffect(() => {
-        if (mood && MOOD_VIDEOS[mood]) {
-            setUrl(MOOD_VIDEOS[mood]);
-        } else {
-            setUrl(MOOD_VIDEOS.neutral);
-        }
-    }, [mood]);
+        // Reload the embed whenever mood changes
+        setKey((k) => k + 1);
+    }, [rawMood]);
 
-    if (!mounted) return null;
+    if (!mounted) {
+        return (
+            <div className="h-full flex flex-col gap-3 p-1 animate-pulse">
+                <div className="h-4 bg-white/10 rounded w-24" />
+                <div className="h-4 bg-white/5 rounded w-full" />
+                <div className="flex-1 bg-white/5 rounded-xl" />
+            </div>
+        );
+    }
+
+    const config = getMoodConfig(rawMood);
+    const spotifyUrl = `https://open.spotify.com/playlist/${config.id}`;
 
     return (
-        <div className="h-full flex flex-col justify-between relative overflow-hidden">
-            {/* Hidden Player */}
-            <div className="absolute opacity-0 pointer-events-none w-0 h-0 overflow-hidden">
-                <ReactPlayer
-                    url={url}
-                    playing={isPlaying}
-                    width="0"
-                    height="0"
-                    volume={0.5}
-                    loop={true}
-                    controls={false}
-                    playsinline={true}
+        <div className="h-full flex flex-col gap-3 relative overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <div className={`bg-white/10 p-2 rounded-full ${config.accent}`}>
+                        <Headphones className="w-4 h-4" />
+                    </div>
+                    <span className="font-semibold text-sm text-foreground">Sonic Therapy</span>
+                </div>
+
+                {/* Animated bars — always show as decorative */}
+                <span className="flex gap-0.5 h-3 items-end opacity-70">
+                    <motion.span
+                        animate={{ scaleY: [0.4, 1, 0.4] }}
+                        transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
+                        className={`w-1 ${config.accent.replace("text-", "bg-")} rounded-full h-full block origin-bottom`}
+                    />
+                    <motion.span
+                        animate={{ scaleY: [0.6, 0.3, 0.9, 0.6] }}
+                        transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut" }}
+                        className={`w-1 ${config.accent.replace("text-", "bg-")} rounded-full h-full block origin-bottom`}
+                    />
+                    <motion.span
+                        animate={{ scaleY: [1, 0.4, 0.7, 1] }}
+                        transition={{ duration: 1.3, repeat: Infinity, ease: "easeInOut" }}
+                        className={`w-1 ${config.accent.replace("text-", "bg-")} rounded-full h-full block origin-bottom`}
+                    />
+                </span>
+            </div>
+
+            {/* Mood Label */}
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={rawMood}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.3 }}
+                >
+                    <p className={`text-xs uppercase tracking-wider font-bold mb-0.5 ${config.accent}`}>
+                        {config.label}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                        {config.desc}
+                    </p>
+                </motion.div>
+            </AnimatePresence>
+
+            {/* Spotify Embed — this actually produces REAL audio */}
+            <div
+                key={key}
+                className={`rounded-xl overflow-hidden border ${config.border} flex-1 min-h-[80px]`}
+            >
+                <iframe
+                    src={`https://open.spotify.com/embed/playlist/${config.id}?utm_source=generator&theme=0`}
+                    width="100%"
+                    height="100%"
+                    style={{ minHeight: 80 }}
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                    allowFullScreen
+                    loading="lazy"
+                    className="border-none block"
                 />
             </div>
 
-            <div className="flex items-center justify-between mb-2 z-10 w-full">
-                <div className="flex items-center gap-2">
-                    <div className="bg-primary/20 p-2 rounded-full text-primary">
-                        <Headphones className="w-4 h-4" />
-                    </div>
-                    <span className="font-semibold text-sm">Sonic Therapy</span>
-                </div>
-                {isPlaying && (
-                    <div className="flex items-center gap-2">
-                        <span className="flex gap-0.5 h-3 items-end">
-                            <span className="w-1 bg-primary animate-[bounce_1s_infinite] h-full"></span>
-                            <span className="w-1 bg-primary animate-[bounce_1.5s_infinite] h-2/3"></span>
-                            <span className="w-1 bg-primary animate-[bounce_0.5s_infinite] h-3/4"></span>
-                        </span>
-                    </div>
-                )}
-            </div>
+            {/* Open Full Playlist */}
+            <a
+                href={spotifyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`flex items-center justify-center gap-2 text-xs font-semibold ${config.accent} hover:opacity-80 transition-opacity`}
+            >
+                Open full playlist <ExternalLink className="w-3 h-3" />
+            </a>
 
-            <div className="space-y-4 z-10 w-full">
-                <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Current Mix</p>
-                    <p className="text-lg font-display capitalize text-foreground truncate">
-                        {mood ? `${mood} Vibes` : "Lofi Girl Radio"}
-                    </p>
-                </div>
+            {/* Mood hint — only if rawMood is neutral (not yet logged) */}
+            {rawMood === "neutral" && (
+                <p className="text-[10px] text-center text-muted-foreground/50 -mt-1">
+                    Log your mood to get a personalised mix
+                </p>
+            )}
 
-                <div className="grid grid-cols-1 gap-2">
-                    <button
-                        onClick={() => setIsPlaying(!isPlaying)}
-                        className={`w-full py-3 rounded-xl transition-all flex items-center justify-center gap-2 font-medium shadow-lg hover:scale-[1.02] active:scale-95 ${isPlaying ? 'bg-primary text-primary-foreground shadow-primary/20' : 'bg-white/5 hover:bg-white/10 text-primary border border-primary/20'}`}
-                    >
-                        {isPlaying ? <PauseCircle className="w-5 h-5 fill-current" /> : <PlayCircle className="w-5 h-5 fill-current" />}
-                        {isPlaying ? "Pause Session" : "Start Session"}
-                    </button>
-                </div>
-            </div>
-
-            <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+            {/* Glow */}
+            <div className={`absolute -bottom-8 -right-8 w-28 h-28 rounded-full blur-3xl pointer-events-none bg-gradient-to-br ${config.color}`} />
         </div>
     );
 }

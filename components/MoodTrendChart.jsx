@@ -29,8 +29,8 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function MoodTrendChart() {
     return (
-        <div className="w-full h-[150px] mt-4">
-            <ResponsiveContainer width="100%" height="100%">
+        <div className="w-full" style={{ height: 150, minHeight: 150 }}>
+            <ResponsiveContainer width="100%" height={150}>
                 <AreaChart data={data}>
                     <defs>
                         <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">

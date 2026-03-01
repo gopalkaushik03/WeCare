@@ -166,7 +166,7 @@ export default function AnalysisPage() {
                                     <Lightbulb className="w-3 h-3" /> A Gentle Reframe
                                 </h3>
                                 <p className="text-zinc-200 leading-relaxed italic border-l-2 border-amber-500/50 pl-4">
-                                    "{analysis.reframe}"
+                                    &ldquo;{analysis.reframe}&rdquo;
                                 </p>
                             </div>
                         </MotionCard>

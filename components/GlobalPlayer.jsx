@@ -1,10 +1,28 @@
 "use client";
-import { useState } from "react";
-import { Play, Pause, SkipForward, Music } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
+import { Music, ExternalLink } from "lucide-react";
+import { useMood } from "@/context/MoodContext";
+
+const MOOD_META = {
+    happy: { label: "Happy Hits", accent: "text-yellow-400", bg: "bg-yellow-400" },
+    calm: { label: "Deep Calm", accent: "text-teal-400", bg: "bg-teal-400" },
+    neutral: { label: "Lofi Beats", accent: "text-cyan-400", bg: "bg-cyan-400" },
+    sad: { label: "Gentle Comfort", accent: "text-blue-400", bg: "bg-blue-400" },
+    anxious: { label: "Calm the Mind", accent: "text-purple-400", bg: "bg-purple-400" },
+};
+
+const MOOD_PLAYLIST_IDS = {
+    happy: "37i9dQZF1DXdPec7aLTmlC",
+    calm: "37i9dQZF1DWZqd5JICZI0u",
+    neutral: "37i9dQZF1DXcBWIGoYBM5M",
+    sad: "37i9dQZF1DX7qK8ma5wgG1",
+    anxious: "37i9dQZF1DWZqd5JICZI0u",
+};
 
 export default function GlobalPlayer() {
-    const [isPlaying, setIsPlaying] = useState(false);
+    const { rawMood } = useMood();
+    const meta = MOOD_META[rawMood] || MOOD_META.neutral;
+    const playlistId = MOOD_PLAYLIST_IDS[rawMood] || MOOD_PLAYLIST_IDS.neutral;
 
     return (
         <motion.div
@@ -13,54 +31,47 @@ export default function GlobalPlayer() {
             transition={{ delay: 1, type: "spring" }}
             className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto"
         >
-            <div className="bg-[#0B0C10]/80 backdrop-blur-xl border border-white/10 rounded-full pl-2 pr-6 py-2 shadow-2xl flex items-center gap-4 hover:scale-105 transition-transform">
-
-                {/* Album Art / Icon */}
-                <div className={`w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center ${isPlaying ? "animate-spin-slow" : ""}`}>
-                    <Music className="w-4 h-4 text-primary" />
+            <div className="bg-[#0B0C10]/90 backdrop-blur-xl border border-white/10 rounded-full pl-3 pr-5 py-2 shadow-2xl flex items-center gap-3">
+                {/* Spinning disc icon */}
+                <div className={`w-9 h-9 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0`}>
+                    <Music className={`w-4 h-4 ${meta.accent}`} />
                 </div>
 
-                {/* Controls & Info */}
-                <div className="flex items-center gap-4">
-                    <div className="flex flex-col w-32 overflow-hidden">
-                        <span className="text-xs font-bold text-white whitespace-nowrap animate-marquee">
-                            {isPlaying ? "Lo-Fi Beats to Relax To" : "Not Playing"}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Sonic Therapy</span>
-                    </div>
-
-                    <div className="h-6 w-px bg-white/10" />
-
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => setIsPlaying(!isPlaying)}
-                            className="text-white hover:text-primary transition-colors"
-                        >
-                            {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current" />}
-                        </button>
-                        <button className="text-muted-foreground hover:text-white transition-colors">
-                            <SkipForward className="w-4 h-4" />
-                        </button>
-                    </div>
+                {/* Track info */}
+                <div className="flex flex-col overflow-hidden w-28">
+                    <span className={`text-xs font-bold truncate ${meta.accent}`}>
+                        {meta.label}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                        Sonic Therapy
+                    </span>
                 </div>
 
-                {/* Waveform Visualization */}
-                {isPlaying && (
-                    <div className="flex items-end gap-1 h-4 ml-2">
-                        {[1, 2, 3].map((i) => (
-                            <motion.div
-                                key={i}
-                                animate={{ height: ["20%", "100%", "20%"] }}
-                                transition={{
-                                    duration: 0.5 + i * 0.1,
-                                    repeat: Infinity,
-                                    ease: "easeInOut"
-                                }}
-                                className="w-1 bg-primary rounded-full"
-                            />
-                        ))}
-                    </div>
-                )}
+                {/* Divider */}
+                <div className="h-6 w-px bg-white/10" />
+
+                {/* Animated waveform (decorative, always playing feel) */}
+                <span className="flex gap-0.5 h-3 items-end">
+                    {[1.1, 0.85, 1.3].map((dur, i) => (
+                        <motion.span
+                            key={i}
+                            animate={{ scaleY: [0.3, 1, 0.3] }}
+                            transition={{ duration: dur, repeat: Infinity, ease: "easeInOut" }}
+                            className={`w-1 ${meta.bg} rounded-full h-full block origin-bottom opacity-80`}
+                        />
+                    ))}
+                </span>
+
+                {/* External link to open in Spotify */}
+                <a
+                    href={`https://open.spotify.com/playlist/${playlistId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-white transition-colors"
+                    title="Open in Spotify"
+                >
+                    <ExternalLink className="w-4 h-4" />
+                </a>
             </div>
         </motion.div>
     );

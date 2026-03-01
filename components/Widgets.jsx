@@ -268,7 +268,7 @@ export function ThoughtShredder() {
                                 />
                             ) : (
                                 <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs italic p-4 bg-white/5 rounded-xl border border-white/5 mb-2">
-                                    "{data.thought}"
+                                    &ldquo;{data.thought}&rdquo;
                                 </div>
                             )}
 

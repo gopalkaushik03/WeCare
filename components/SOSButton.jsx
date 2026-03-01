@@ -91,9 +91,9 @@ export default function SOSButton() {
                                     <motion.div
                                         className="absolute -bottom-8 text-sm font-medium text-foreground/80"
                                         animate={{
-                                            opacity: [0, 1, 1, 0, 0], // Crude text swap simulation or just persistent guide
-                                            content: ["Inhale...", "Hold...", "Exhale..."] // Framer motion doesn't animate content directly easily, simpler to use static text or separate components.
+                                            opacity: [0, 1, 1, 1, 0],
                                         }}
+                                        transition={{ duration: 19, repeat: Infinity, times: [0, 0.1, 0.5, 0.9, 1] }}
                                     >
                                         Inhale (4) • Hold (7) • Exhale (8)
                                     </motion.div>

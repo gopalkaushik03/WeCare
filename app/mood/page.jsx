@@ -21,7 +21,7 @@ const MOODS = [
 
 export default function MoodTrackerPage() {
     const router = useRouter();
-    const { setMood } = useMood();
+    const { setMood, setRawMood } = useMood();
 
     const [step, setStep] = useState(1); // 1: Select, 2: Reflect, 3: Success
     const [selectedMood, setSelectedMood] = useState(null);
@@ -67,7 +67,8 @@ export default function MoodTrackerPage() {
             }
             // --- STREAK LOGIC END ---
 
-            // Set global mood context
+            // Set global mood context (grouped + raw)
+            setRawMood(selectedMood);
             if (["sad", "anxious"].includes(selectedMood)) {
                 setMood("low");
             } else if (["happy"].includes(selectedMood)) {
@@ -138,7 +139,7 @@ export default function MoodTrackerPage() {
                     <MotionCard className="bg-primary/5 border-primary/20 p-6 mb-6">
                         <h3 className="font-semibold text-primary mb-2">Micro-Insight</h3>
                         <p className="text-muted-foreground italic">
-                            "{MICRO_INSIGHTS[selectedMood] || "Taking a moment to check in makes a difference."}"
+                            &ldquo;{MICRO_INSIGHTS[selectedMood] || "Taking a moment to check in makes a difference."}&rdquo;
                         </p>
                     </MotionCard>
 
