@@ -1,13 +1,13 @@
 "use client";
 import { motion } from "framer-motion";
-import { cardHover, buttonTap } from "@/lib/motion";
+import { buttonTap } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 export default function MoodCard({ label, icon: Icon, color, onClick, isSelected }) {
     return (
         <motion.button
             onClick={onClick}
-            whileHover={cardHover}
+            whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
             whileTap={buttonTap}
             className={cn(
                 "relative flex flex-col items-center justify-center p-6 rounded-2xl border transition-all duration-300 w-full aspect-square",

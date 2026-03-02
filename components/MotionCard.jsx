@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { slideUp, cardHover } from "@/lib/motion";
+import { slideUp } from "@/lib/motion";
+
 
 export default function MotionCard({ children, className, delay = 0, hoverEffect = true, glass = false, layoutId }) {
     return (

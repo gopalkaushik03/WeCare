@@ -15,6 +15,7 @@ import { Brain, History, TrendingUp, Calendar } from "lucide-react";
 import ConsistencyHeatmap from "@/components/ConsistencyHeatmap";
 import MoodTrendChart from "@/components/MoodTrendChart";
 import WeeklyInsight from "@/components/WeeklyInsight";
+import TrajectoryWidget from "@/components/TrajectoryWidget";
 
 export default function DashboardPage() {
     const { mood } = useMood();
@@ -110,17 +111,10 @@ export default function DashboardPage() {
                     </SpotlightCard>
                 </motion.div>
 
-                {/* 4. Mood Trend (Info - Middle Right) */}
+                {/* 4. Emotional Trajectory (Middle Right) */}
                 <motion.div variants={item} className="md:col-span-1 md:row-span-1">
-                    <SpotlightCard className={`h-full p-4 flex flex-col ${cardStyle}`}>
-                        <div className="flex items-center gap-2 mb-2 text-slate-500 dark:text-gray-400">
-                            <TrendingUp className="w-3 h-3" />
-                            <span className="text-[10px] font-bold uppercase">Mood Trend</span>
-                        </div>
-                        <MoodTrendChart />
-                        <div className="mt-auto text-[10px] text-slate-400 dark:text-gray-500 text-center pt-2">
-                            Last 7 Days
-                        </div>
+                    <SpotlightCard className={`h-full p-4 flex flex-col ${cardStyle} border-emerald-500/10`}>
+                        <TrajectoryWidget />
                     </SpotlightCard>
                 </motion.div>
 

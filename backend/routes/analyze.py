@@ -1,37 +1,90 @@
-from fastapi import APIRouter, HTTPException
+"""
+backend/routes/analyze.py
+
+POST /api/v1/analyze — The main AI analysis endpoint.
+- Rate limited: 10 requests/hour per IP
+- Async Gemini call
+- Contextual safety disclaimer
+- Optionally fetches user history for longitudinal context
+"""
+
+from fastapi import APIRouter, Request, Depends, Query
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional, List
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
 from services.gemini_client import analyze_user_input
-from utils.safety import get_safety_disclaimer
+from utils.safety import get_contextual_disclaimer
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
-# Define Request Model
-class UserCheckIn(BaseModel):
+
+# -----------------------------------------------------------------
+# Request / Response Models
+# -----------------------------------------------------------------
+class AnalyzeRequest(BaseModel):
     mood: str
     notes: Optional[str] = ""
+    cognitive_load_score: Optional[float] = None  # 0–100, from frontend typing analysis
 
-# Define Response Model (Optional, for documentation)
+
 class AnalyzeResponse(BaseModel):
     summary: str
+    insight: Optional[str] = None
+    reframe: Optional[str] = None
+    action: Optional[str] = None
     risk_level: str
-    suggestions: List[str]
-    resources: List[str]
+    reframe_technique: Optional[str] = None
+    emotional_themes: List[str] = []
+    suggestions: List[str] = []
+    resources: List[str] = []
     disclaimer: str
 
+
+# -----------------------------------------------------------------
+# Endpoint
+# -----------------------------------------------------------------
 @router.post("/analyze", response_model=AnalyzeResponse)
-async def analyze_mood(check_in: UserCheckIn):
-    try:
-        # Convert Pydantic model to dict
-        user_data = check_in.model_dump()
-        
-        # Call AI Service
-        result = analyze_user_input(user_data)
-        
-        # Ensure disclaimer is present (double safety)
-        if "disclaimer" not in result or not result["disclaimer"]:
-            result["disclaimer"] = get_safety_disclaimer()
-            
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+@limiter.limit("10/hour")
+async def analyze_mood(
+    request: Request,
+    body: AnalyzeRequest,
+    user_id: Optional[str] = Query(None, description="User ID for history lookup"),
+):
+    """
+    Analyzes mood and notes using Gemini AI with longitudinal context.
+
+    Optionally pass ?user_id= to load the user's last 5 entries for
+    continuity-aware analysis. If DB is unavailable, degrades gracefully.
+    """
+    user_data = {
+        "mood": body.mood,
+        "notes": body.notes or "",
+        "cognitive_load_score": body.cognitive_load_score,
+    }
+
+    # Fetch history for longitudinal context (graceful degradation if DB unavailable)
+    history: list[dict] = []
+    if user_id:
+        try:
+            from db import get_client
+            from main import MONGODB_URI
+            if MONGODB_URI:
+                db = get_client()["wecare"]
+                cursor = db["mood_entries"].find(
+                    {"user_id": user_id},
+                    {"_id": 0, "date": 1, "mood": 1, "risk_level": 1, "emotional_themes": 1},
+                ).sort("created_at", -1).limit(5)
+                history = await cursor.to_list(5)
+                history.reverse()  # chronological order for the prompt
+        except Exception as e:
+            print(f"[ANALYZE] Could not fetch history: {e}")
+
+    result = await analyze_user_input(user_data, history=history)
+
+    # Ensure disclaimer is always contextually appropriate
+    result["disclaimer"] = get_contextual_disclaimer(result.get("risk_level", "low"))
+
+    return result

@@ -1,61 +1,112 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+"""
+backend/main.py
+
+Production-ready FastAPI entrypoint for WeCare.
+- MongoDB lifespan wired via db.py
+- All routes registered with /api/v1 prefix
+- Rate limiting via slowapi
+- CORS configured for local + Vercel production
+"""
+
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from dotenv import load_dotenv
 import os
-import json
 
-# Load environment variables from backend/.env first, then fallback to root .env
+# Load env vars: backend/.env takes priority over root .env
 load_dotenv(override=True)
 
-# Import the Gemini client service
-from services.gemini_client import analyze_user_input, client as gemini_client
+# -----------------------------------------------------------------
+# Rate Limiter (must be created before app)
+# -----------------------------------------------------------------
+limiter = Limiter(key_func=get_remote_address)
 
-# Initialize FastAPI app
-app = FastAPI()
+# -----------------------------------------------------------------
+# DB Lifespan — connects MongoDB on startup, closes on shutdown
+# -----------------------------------------------------------------
+# Graceful degradation: if MONGODB_URI is not set, skip DB init
+# so the analysis endpoint still works without a DB connection.
+MONGODB_URI = os.getenv("MONGODB_URI")
 
-# Enable CORS
+if MONGODB_URI:
+    from db import lifespan as db_lifespan
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        async with db_lifespan(app):
+            yield
+else:
+    print("[MAIN] ⚠️  MONGODB_URI not set — running without database persistence.")
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        yield
+
+# -----------------------------------------------------------------
+# FastAPI App
+# -----------------------------------------------------------------
+app = FastAPI(
+    title="WeCare API",
+    description="AI-powered mental health companion backend",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+# Rate limiter error handler
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# -----------------------------------------------------------------
+# CORS
+# -----------------------------------------------------------------
+PRODUCTION_ORIGINS = os.getenv("ALLOWED_ORIGINS", "").split(",")
+origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    *[o.strip() for o in PRODUCTION_ORIGINS if o.strip()],
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Define Data Model for the Request
-class MoodRequest(BaseModel):
-    mood: str
-    notes: str
+# -----------------------------------------------------------------
+# Routers
+# -----------------------------------------------------------------
+from routes.analyze import router as analyze_router
+from routes.entries import router as entries_router
+from routes.trajectory import router as trajectory_router
 
-# --- THE API ENDPOINT ---
-@app.post("/analyze")
-async def analyze_mood(request: MoodRequest):
-    """
-    Analyzes mood and notes using Gemini AI.
-    Crisis keywords are intercepted in gemini_client.py before hitting the API.
-    """
-    user_data = {"mood": request.mood, "notes": request.notes}
+app.include_router(analyze_router, prefix="/api/v1", tags=["Analysis"])
+app.include_router(entries_router, prefix="/api/v1", tags=["Entries"])
+app.include_router(trajectory_router, prefix="/api/v1", tags=["Trajectory"])
 
-    print(f"[INFO] Received analysis request: mood={request.mood}")
-
-    result = analyze_user_input(user_data)
-
-    print(f"[INFO] Returning result with risk_level={result.get('risk_level', 'unknown')}")
-    return result
-
-@app.get("/")
-def home():
-    api_status = "✅ Connected" if gemini_client else "❌ Not initialized (check GEMINI_API_KEY)"
+# -----------------------------------------------------------------
+# Health & Root
+# -----------------------------------------------------------------
+@app.get("/", tags=["Health"])
+def root():
+    from services.gemini_client import client as gemini_client
     return {
         "message": "WeCare Backend is Running",
-        "gemini_status": api_status
+        "version": "1.0.0",
+        "gemini_status": "✅ Connected" if gemini_client else "❌ Not initialized",
+        "db_status": "✅ Enabled" if MONGODB_URI else "⚠️ Degraded (no MONGODB_URI)",
     }
 
-@app.get("/health")
+
+@app.get("/health", tags=["Health"])
 def health():
     return {
         "status": "ok",
-        "gemini_client": gemini_client is not None,
-        "api_key_set": bool(os.getenv("GEMINI_API_KEY"))
+        "api_key_set": bool(os.getenv("GEMINI_API_KEY")),
+        "db_enabled": bool(MONGODB_URI),
     }

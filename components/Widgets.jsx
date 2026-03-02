@@ -1,33 +1,61 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sprout, Trash2, Check, Wind, Flame, TreeDeciduous } from "lucide-react";
+import { Sprout, Trash2, Check, Wind, Flame, TreeDeciduous, Shield } from "lucide-react";
+import { api } from "@/lib/api";
 
 export function ZenGarden() {
     const [streak, setStreak] = useState(0);
-    const [stage, setStage] = useState(0); // 0: Seed, 1: Sprout, 2: Sapling, 3: Tree, 4: Ancient
+    const [longestStreak, setLongestStreak] = useState(0);
+    const [stage, setStage] = useState(0);
+    const [graceDayUsed, setGraceDayUsed] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Read and Apply Decay Logic on Mount
-        const today = new Date().toISOString().split("T")[0];
-        const lastLogged = localStorage.getItem("wecare_last_logged");
-        let currentStreak = parseInt(localStorage.getItem("wecare_streak") || "0", 10);
+        async function loadStreak() {
+            // 1. Use localStorage as instant optimistic cache
+            const cached = parseInt(localStorage.getItem("wecare_streak") || "0", 10);
+            setStreak(cached);
+            determineStage(cached);
 
-        if (lastLogged && lastLogged !== today) {
-            const diffTime = Math.abs(new Date(today) - new Date(lastLogged));
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            if (diffDays > 1) {
-                // Missed more than 1 day -> Reset
-                currentStreak = 0;
-                localStorage.setItem("wecare_streak", "0"); // Persist reset
+            // 2. Fetch real value from API (overrides cache)
+            try {
+                const data = await api.mood.streak();
+                const serverStreak = data.current ?? cached;
+                setStreak(serverStreak);
+                setLongestStreak(data.longest ?? 0);
+                determineStage(serverStreak);
+                localStorage.setItem("wecare_streak", serverStreak.toString());
+            } catch {
+                // API unavailable — keep cached value
+            } finally {
+                setIsLoading(false);
             }
-            // If diffDays === 1, we preserve streak (waiting for today's log)
-        }
 
-        setStreak(currentStreak);
-        determineStage(currentStreak);
+            // 3. Grace Day Logic — 1 free pass per calendar week
+            const today = new Date().toISOString().split("T")[0];
+            const lastLogged = localStorage.getItem("wecare_last_logged");
+            const weekNum = getWeekNumber(new Date());
+            const graceWeek = localStorage.getItem("wecare_grace_week");
+
+            if (lastLogged && lastLogged !== today) {
+                const diffDays = Math.ceil(
+                    Math.abs(new Date(today) - new Date(lastLogged)) / (1000 * 60 * 60 * 24)
+                );
+                if (diffDays === 2 && String(weekNum) !== graceWeek) {
+                    // Would reset — use grace day instead
+                    localStorage.setItem("wecare_grace_week", String(weekNum));
+                    setGraceDayUsed(true);
+                }
+            }
+        }
+        loadStreak();
     }, []);
+
+    function getWeekNumber(d) {
+        const onejan = new Date(d.getFullYear(), 0, 1);
+        return Math.ceil(((d - onejan) / 86400000 + onejan.getDay() + 1) / 7);
+    }
 
     const determineStage = (s) => {
         if (s === 0) setStage(0);       // Seed
@@ -58,44 +86,53 @@ export function ZenGarden() {
     return (
         <div className="h-full flex flex-col items-center justify-center relative overflow-hidden p-6 group">
             {/* Streak Badge */}
-            <div className="absolute top-4 right-4 bg-white/5 px-3 py-1 rounded-full border border-white/10 z-20">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                    <Flame className={`w-3 h-3 ${streak > 0 ? 'fill-orange-500 text-orange-500' : 'text-slate-400'}`} />
-                    {streak} Day Streak
-                </span>
+            <div className="absolute top-4 right-4 flex items-center gap-1.5 z-20">
+                {graceDayUsed && (
+                    <motion.div
+                        initial={{ scale: 0 }} animate={{ scale: 1 }}
+                        className="bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full flex items-center gap-1"
+                        title="Grace Day used — streak preserved!"
+                    >
+                        <Shield className="w-2.5 h-2.5 text-amber-500" />
+                        <span className="text-[9px] font-bold text-amber-500">Grace Day</span>
+                    </motion.div>
+                )}
+                <div className="bg-white/5 px-3 py-1 rounded-full border border-white/10">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                        <Flame className={`w-3 h-3 ${streak > 0 ? 'fill-orange-500 text-orange-500' : 'text-slate-400'}`} />
+                        {isLoading ? "..." : `${streak} Day${streak !== 1 ? "s" : ""}`}
+                    </span>
+                </div>
             </div>
 
             {/* Main Animated Icon */}
             <div className="relative z-10 mb-4">
-                {/* Dynamic Glow Aura */}
                 <motion.div
                     animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
                     transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                     className={`absolute inset-0 blur-3xl rounded-full ${streak > 30 ? 'bg-orange-500/30' : streak > 0 ? 'bg-green-500/20' : 'bg-transparent'} transition-colors duration-1000`}
                 />
-
                 <motion.div
-                    animate={{
-                        scale: currentConfig.scale,
-                        rotate: [0, 2, -2, 0],
-                        y: [0, -5, 0]
-                    }}
+                    animate={{ scale: currentConfig.scale, rotate: [0, 2, -2, 0], y: [0, -5, 0] }}
                     transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                 >
                     <Icon className={`w-20 h-20 ${currentConfig.color} drop-shadow-2xl transition-colors duration-500`} strokeWidth={1.5} />
                 </motion.div>
             </div>
 
-            {/* Stage Text */}
+            {/* Stage Text + Stats */}
             <div className="text-center z-10">
                 <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
                     {currentConfig.text}
                 </p>
 
-                {/* Milestone Progress */}
-                <div className="mt-4 w-full max-w-[120px] mx-auto opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                {/* Milestone Progress + Longest Streak (on hover) */}
+                <div className="mt-4 w-full max-w-[140px] mx-auto opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
                         <span>Next: {nextMilestone} Days</span>
+                        {longestStreak > 0 && (
+                            <span className="text-amber-500">Best: {longestStreak}</span>
+                        )}
                     </div>
                     <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                         <motion.div
@@ -111,6 +148,7 @@ export function ZenGarden() {
         </div>
     );
 }
+
 
 export function ThoughtShredder() {
     const [step, setStep] = useState(0); // 0: Mood, 1: Thought, 2: Control, 3: Action, 4: Done

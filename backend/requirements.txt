@@ -5,12 +5,18 @@ uvicorn[standard]>=0.27.0
 # Environment Management
 python-dotenv>=1.0.0
 
-# AI/ML
-google-generativeai>=0.3.0
+# AI/ML — google-genai is the new unified SDK (replaces google-generativeai)
+google-genai>=1.0.0
+
+# Database (async MongoDB driver)
+motor>=3.3.0
+
+# Rate Limiting
+slowapi>=0.1.9
 
 # HTTP & Utilities
 requests>=2.31.0
 pydantic>=2.5.0
 
-# CORS Support (included in FastAPI but explicit for clarity)
-# fastapi already includes starlette which provides CORS
+# Multipart form support (for future voice upload endpoint)
+python-multipart>=0.0.9
