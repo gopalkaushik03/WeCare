@@ -1,6 +1,8 @@
 # Python
 __pycache__/
+**/__pycache__/
 *.py[cod]
+*.pyc
 *$py.class
 *.so
 .Python
@@ -15,9 +17,11 @@ venv/
 env/
 ENV/
 
-# Environment Variables
+# Environment Variables — NEVER commit these
 .env
+.env.*
 .env.local
+.env.production
 
 # IDE
 .vscode/
@@ -27,3 +31,20 @@ ENV/
 
 # Logs
 *.log
+
+# Databases / temp files
+*.sqlite
+*.db
+
+# Node (frontend co-located)
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug / temp output files
+test_results.txt
+verify_results*.txt
+analysis_output.txt
+analysis.json

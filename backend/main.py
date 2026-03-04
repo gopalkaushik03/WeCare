@@ -63,10 +63,15 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # -----------------------------------------------------------------
 # CORS
 # -----------------------------------------------------------------
+# Hard-coded safe origins (local dev + Vercel production).
+# Add any additional domains via ALLOWED_ORIGINS env var (comma-separated).
 PRODUCTION_ORIGINS = os.getenv("ALLOWED_ORIGINS", "").split(",")
 origins = [
     "http://localhost:3000",
     "http://localhost:3001",
+    # Vercel production frontend
+    "https://we-care-one-navy.vercel.app",
+    # Any extra origins injected at runtime (e.g. preview deploys)
     *[o.strip() for o in PRODUCTION_ORIGINS if o.strip()],
 ]
 
@@ -95,18 +100,24 @@ app.include_router(trajectory_router, prefix="/api/v1", tags=["Trajectory"])
 @app.get("/", tags=["Health"])
 def root():
     from services.gemini_client import client as gemini_client
+    from db import get_db_status
+    db_info = get_db_status()
     return {
         "message": "WeCare Backend is Running",
         "version": "1.0.0",
         "gemini_status": "✅ Connected" if gemini_client else "❌ Not initialized",
-        "db_status": "✅ Enabled" if MONGODB_URI else "⚠️ Degraded (no MONGODB_URI)",
+        "db_status": "✅ Connected" if db_info["db_connected"] else "⚠️ Degraded",
+        **db_info,
     }
 
 
 @app.get("/health", tags=["Health"])
 def health():
+    from db import get_db_status
+    db_info = get_db_status()
     return {
         "status": "ok",
         "api_key_set": bool(os.getenv("GEMINI_API_KEY")),
         "db_enabled": bool(MONGODB_URI),
+        **db_info,
     }

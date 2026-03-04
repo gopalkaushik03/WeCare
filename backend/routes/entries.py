@@ -2,34 +2,24 @@
 backend/routes/entries.py
 
 Mood entry persistence endpoints.
-- POST /api/v1/entries  — save an entry after analysis
-- GET  /api/v1/entries  — retrieve last 30 entries for a user
-- GET  /api/v1/entries/streak — compute streak from entry history
+- POST /api/v1/entries        — save a completed analysis entry
+- GET  /api/v1/entries        — retrieve last N entries for a user
+- GET  /api/v1/entries/streak — compute check-in streak from entry history
 """
 
-from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field
-from typing import Optional, List
+import logging
 from datetime import datetime, timezone
+from typing import Optional
 
+from fastapi import APIRouter, HTTPException, Query
+
+from models import MoodEntryCreate, MoodEntryDocument
+
+log = logging.getLogger("wecare.entries")
 router = APIRouter()
 
-# -----------------------------------------------------------------------
-# Models
-# -----------------------------------------------------------------------
-class MoodEntryCreate(BaseModel):
-    user_id: str = Field(default="local_user", description="User identifier (auth token in Phase 2)")
-    mood: str
-    notes: Optional[str] = ""
-    risk_level: str = "low"
-    summary: str = ""
-    insight: Optional[str] = None
-    reframe: Optional[str] = None
-    action: Optional[str] = None
-    reframe_technique: Optional[str] = None
-    emotional_themes: List[str] = []
-    suggestions: List[str] = []
-    date: Optional[str] = None  # "YYYY-MM-DD" — inferred if not provided
+
+from pydantic import BaseModel
 
 
 class StreakResponse(BaseModel):
@@ -84,33 +74,19 @@ async def create_entry(entry: MoodEntryCreate):
     now = datetime.now(timezone.utc)
     date_str = entry.date or now.date().isoformat()
 
-    document = {
-        "user_id": entry.user_id,
-        "mood": entry.mood,
-        "notes": entry.notes,
-        "risk_level": entry.risk_level,
-        "summary": entry.summary,
-        "insight": entry.insight,
-        "reframe": entry.reframe,
-        "action": entry.action,
-        "reframe_technique": entry.reframe_technique,
-        "emotional_themes": entry.emotional_themes,
-        "suggestions": entry.suggestions,
-        "date": date_str,
-        "created_at": now,
-    }
+    # Build a validated MoodEntryDocument from the incoming request
+    doc = MoodEntryDocument.from_create(entry, date_str=date_str)
+    document = doc.model_dump()
 
-    try:
-        from db import get_client
-        db = get_client()["wecare"]
-        result = await db["mood_entries"].insert_one(document)
-        return {"success": True, "id": str(result.inserted_id), "date": date_str}
-    except RuntimeError:
-        # DB not initialized — return graceful success so frontend flow continues
-        print("[ENTRIES] DB unavailable — entry not persisted.")
-        return {"success": False, "id": None, "date": date_str, "message": "DB unavailable"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    from db import safe_insert
+    inserted_id = await safe_insert("mood_entries", document)
+
+    if inserted_id:
+        log.info("Entry persisted: user=%s date=%s id=%s", entry.user_id, date_str, inserted_id)
+        return {"success": True, "id": inserted_id, "date": date_str}
+
+    log.warning("Entry not persisted (DB unavailable): user=%s date=%s", entry.user_id, date_str)
+    return {"success": False, "id": None, "date": date_str, "message": "DB unavailable"}
 
 
 # -----------------------------------------------------------------------
@@ -118,29 +94,27 @@ async def create_entry(entry: MoodEntryCreate):
 # -----------------------------------------------------------------------
 @router.get("/entries/streak", response_model=StreakResponse)
 async def get_streak(user_id: str = Query(default="local_user")):
-    try:
-        from db import get_client
-        db = get_client()["wecare"]
-        cursor = db["mood_entries"].find(
-            {"user_id": user_id},
-            {"date": 1, "_id": 0}
-        ).sort("created_at", 1)
-        docs = await cursor.to_list(365)
-        dates = [d["date"] for d in docs if "date" in d]
+    from db import safe_find
+    from pymongo import ASCENDING
 
-        current, longest = _compute_streak(dates)
-        last_date = dates[-1] if dates else None
+    docs = await safe_find(
+        "mood_entries",
+        query={"user_id": user_id},
+        projection={"date": 1, "_id": 0},
+        sort=[("created_at", ASCENDING)],
+        limit=365,
+    )
+    dates = [d["date"] for d in docs if "date" in d]
+    current, longest = _compute_streak(dates)
+    last_date = dates[-1] if dates else None
 
-        return StreakResponse(
-            current=current,
-            longest=longest,
-            total_entries=len(docs),
-            last_checked_in=last_date,
-        )
-    except RuntimeError:
-        return StreakResponse(current=0, longest=0, total_entries=0)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    log.info("Streak query: user=%s entries=%d current=%d longest=%d", user_id, len(docs), current, longest)
+    return StreakResponse(
+        current=current,
+        longest=longest,
+        total_entries=len(docs),
+        last_checked_in=last_date,
+    )
 
 
 # -----------------------------------------------------------------------
@@ -151,20 +125,20 @@ async def get_entries(
     user_id: str = Query(default="local_user"),
     limit: int = Query(default=30, le=100),
 ):
-    try:
-        from db import get_client
-        db = get_client()["wecare"]
-        cursor = db["mood_entries"].find(
-            {"user_id": user_id},
-            {"_id": 0, "user_id": 0}
-        ).sort("created_at", -1).limit(limit)
-        docs = await cursor.to_list(limit)
-        # Convert datetime objects to ISO strings for JSON serialization
-        for doc in docs:
-            if isinstance(doc.get("created_at"), datetime):
-                doc["created_at"] = doc["created_at"].isoformat()
-        return {"entries": docs, "count": len(docs)}
-    except RuntimeError:
-        return {"entries": [], "count": 0, "message": "DB unavailable"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    from db import safe_find
+    from pymongo import DESCENDING
+
+    docs = await safe_find(
+        "mood_entries",
+        query={"user_id": user_id},
+        projection={"_id": 0, "user_id": 0},
+        sort=[("created_at", DESCENDING)],
+        limit=limit,
+    )
+    # Serialise datetime objects to ISO strings for JSON
+    for doc in docs:
+        if isinstance(doc.get("created_at"), datetime):
+            doc["created_at"] = doc["created_at"].isoformat()
+
+    log.info("GET entries: user=%s count=%d", user_id, len(docs))
+    return {"entries": docs, "count": len(docs)}
