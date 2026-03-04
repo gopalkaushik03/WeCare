@@ -35,6 +35,9 @@ export default function AnalysisPage() {
     useEffect(() => {
         const mood = searchParams.get("mood");
         const notes = searchParams.get("notes") || "";
+        const rawScore = searchParams.get("cognitive_load_score");
+        const cognitive_load_score = rawScore ? parseInt(rawScore, 10) : null;
+
         if (!mood) {
             router.push("/mood");
             return;
@@ -44,7 +47,7 @@ export default function AnalysisPage() {
             try {
                 setLoading(true);
                 setError(false);
-                const result = await api.analysis.submit(mood, notes);
+                const result = await api.analysis.submit(mood, notes, cognitive_load_score);
 
                 if (result.success) {
                     setAnalysis(result.analysis);

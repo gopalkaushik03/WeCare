@@ -173,7 +173,7 @@ export default function MoodTrackerPage() {
             else setMood("neutral");
 
             // 4. Navigate to analysis
-            router.push(`/analysis?mood=${selectedMood}&notes=${encodeURIComponent(notes)}`);
+            router.push(`/analysis?mood=${selectedMood}&notes=${encodeURIComponent(notes)}&cognitive_load_score=${clScore}`);
         } catch (error) {
             console.error(error);
         } finally {
