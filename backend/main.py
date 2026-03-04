@@ -65,15 +65,14 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # -----------------------------------------------------------------
 # Hard-coded safe origins (local dev + Vercel production).
 # Add any additional domains via ALLOWED_ORIGINS env var (comma-separated).
-PRODUCTION_ORIGINS = os.getenv("ALLOWED_ORIGINS", "").split(",")
+PRODUCTION_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+
 origins = [
     "http://localhost:3000",
     "http://localhost:3001",
     # Vercel production frontend
     "https://we-care-one-navy.vercel.app",
-    # Any extra origins injected at runtime (e.g. preview deploys)
-    *[o.strip() for o in PRODUCTION_ORIGINS if o.strip()],
-]
+] + PRODUCTION_ORIGINS
 
 app.add_middleware(
     CORSMiddleware,
