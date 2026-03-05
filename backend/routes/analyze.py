@@ -8,6 +8,7 @@ POST /api/v1/analyze — The main AI analysis endpoint.
 - Optionally fetches user history for longitudinal context
 """
 
+import logging
 from fastapi import APIRouter, Request, Depends, Query
 from pydantic import BaseModel
 from typing import Optional, List
@@ -16,7 +17,9 @@ from slowapi.util import get_remote_address
 
 from services.gemini_client import analyze_user_input
 from utils.safety import get_contextual_disclaimer
+from db import MONGODB_DB
 
+log = logging.getLogger("wecare.analyze")
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
@@ -72,7 +75,7 @@ async def analyze_mood(
             from db import get_client
             from main import MONGODB_URI
             if MONGODB_URI:
-                db = get_client()["wecare"]
+                db = get_client()[MONGODB_DB]
                 cursor = db["mood_entries"].find(
                     {"user_id": user_id},
                     {"_id": 0, "date": 1, "mood": 1, "risk_level": 1, "emotional_themes": 1},
@@ -80,7 +83,7 @@ async def analyze_mood(
                 history = await cursor.to_list(5)
                 history.reverse()  # chronological order for the prompt
         except Exception as e:
-            print(f"[ANALYZE] Could not fetch history: {e}")
+            log.warning("[ANALYZE] Could not fetch history: %s", e)
 
     result = await analyze_user_input(user_data, history=history)
 

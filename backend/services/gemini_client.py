@@ -16,10 +16,13 @@ import os
 import re
 import json
 import asyncio
+import logging
 from typing import Optional
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+
+log = logging.getLogger("wecare.gemini")
 
 load_dotenv(override=True)
 
@@ -74,11 +77,11 @@ client: Optional[genai.Client] = None
 if api_key:
     try:
         client = genai.Client(api_key=api_key)
-        print("[GEMINI] ✅ Client initialized.")
+        log.info("Gemini client initialized.")
     except Exception as e:
-        print(f"[GEMINI] ❌ Init error: {e}")
+        log.error("Gemini init error: %s", e)
 else:
-    print("[GEMINI] ❌ GEMINI_API_KEY not set.")
+    log.warning("GEMINI_API_KEY not set — AI analysis will use fallback responses.")
 
 # -----------------------------------------------------------------------
 # Response Schema — guaranteed JSON structure, eliminates manual parsing
@@ -130,7 +133,7 @@ def _get_system_prompt() -> str:
         with open(prompt_path, "r", encoding="utf-8") as f:
             return f.read()
     except Exception as e:
-        print(f"[GEMINI] Warning: Could not load prompt file: {e}")
+        log.warning("Could not load system prompt file: %s", e)
         return (
             "You are WeCare, a compassionate AI mental health companion. "
             "Analyze the user's mood and notes. Select the most appropriate CBT technique "
@@ -197,12 +200,12 @@ async def analyze_user_input(user_data: dict, history: list[dict] | None = None)
 
     # 1. Crisis Check — instant, no API call
     if is_crisis(notes):
-        print(f"[GEMINI] ⚠️ Crisis pattern detected in notes.")
+        log.warning("Crisis pattern detected in user notes — returning crisis response.")
         return CRISIS_RESPONSE
 
     # 2. Fallback if client not ready
     if not client:
-        print("[GEMINI] ❌ Client not initialized — returning fallback.")
+        log.error("Gemini client not initialized — returning fallback.")
         return _fallback_response("AI service not configured. Check GEMINI_API_KEY.")
 
     # 3. Build prompt
@@ -220,14 +223,15 @@ async def analyze_user_input(user_data: dict, history: list[dict] | None = None)
 
     # 4. Async Gemini call
     try:
-        print(f"[GEMINI] Calling {MODEL_NAME} (async)...")
+        log.info("Calling %s (async)...", MODEL_NAME)
         response = await client.aio.models.generate_content(
             model=MODEL_NAME,
             contents=full_prompt,
             config=_GENERATE_CONFIG,
         )
         parsed = json.loads(response.text)
-        print(f"[GEMINI] ✅ Parsed. risk_level={parsed.get('risk_level')} | technique={parsed.get('reframe_technique')}")
+        log.info("Gemini response OK. risk_level=%s technique=%s",
+                 parsed.get('risk_level'), parsed.get('reframe_technique'))
         return {
             "summary":           parsed.get("summary", ""),
             "insight":           parsed.get("insight"),
@@ -240,7 +244,7 @@ async def analyze_user_input(user_data: dict, history: list[dict] | None = None)
             "resources":         parsed.get("resources", []),
         }
     except Exception as e:
-        print(f"[GEMINI] ❌ Error: {e}")
+        log.error("Gemini API call failed: %s", e)
         return _fallback_response(str(e))
 
 

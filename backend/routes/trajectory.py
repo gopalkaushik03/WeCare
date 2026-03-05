@@ -7,10 +7,14 @@ Uses the rule-based predict_trajectory() function from gemini_client.
 No ML model required — leverages risk_level ordinals from stored entries.
 """
 
+import logging
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional
 
+from db import MONGODB_DB
+
+log = logging.getLogger("wecare.trajectory")
 router = APIRouter()
 
 TRAJECTORY_META = {
@@ -60,7 +64,7 @@ async def get_trajectory(
 
     try:
         from db import get_client
-        db = get_client()["wecare"]
+        db = get_client()[MONGODB_DB]
         cursor = db["mood_entries"].find(
             {"user_id": user_id},
             {"risk_level": 1, "date": 1, "_id": 0},
@@ -69,7 +73,9 @@ async def get_trajectory(
         docs.reverse()  # chronological order
     except RuntimeError:
         docs = []
+        log.warning("DB not available for trajectory query — returning empty.")
     except Exception as e:
+        log.error("Trajectory query failed: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
 
     risk_map = {"low": 1, "medium": 2, "high": 3}
