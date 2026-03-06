@@ -20,3 +20,4 @@ pydantic>=2.5.0
 # Authentication (JWT & Password Hashing)
 PyJWT>=2.8.0
 passlib[bcrypt]>=1.7.4
+bcrypt<4.0.0
