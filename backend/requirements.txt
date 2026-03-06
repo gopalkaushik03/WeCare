@@ -15,8 +15,8 @@ motor>=3.3.0
 slowapi>=0.1.9
 
 # HTTP & Utilities
-requests>=2.31.0
 pydantic>=2.5.0
 
-# Multipart form support (for future voice upload endpoint)
-python-multipart>=0.0.9
+# Authentication (JWT & Password Hashing)
+PyJWT>=2.8.0
+passlib[bcrypt]>=1.7.4
