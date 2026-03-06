@@ -16,6 +16,11 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from dotenv import load_dotenv
 import os
+import sys
+
+# Ensure backend directory is in sys.path so absolute imports (like `import db`) 
+# resolve correctly even if uvicorn is started from the root directory.
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Load env vars: backend/.env takes priority over root .env
 load_dotenv(override=True)
