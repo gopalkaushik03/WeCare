@@ -172,8 +172,20 @@ export default function MoodTrackerPage() {
             else if (["happy"].includes(selectedMood)) setMood("positive");
             else setMood("neutral");
 
-            // 4. Navigate to analysis
-            router.push(`/analysis?mood=${selectedMood}&notes=${encodeURIComponent(notes)}&cognitive_load_score=${clScore}`);
+            // 4. Store the result in sessionStorage so analysis page can read it
+            //    without making a second Gemini API call (fixes double-call bug).
+            //    Notes are intentionally NOT stored in the URL to protect PII.
+            sessionStorage.setItem(
+                "wc_analysis",
+                JSON.stringify({
+                    result: analysisResult.success ? analysisResult.analysis : null,
+                    mood: selectedMood,
+                    clScore,
+                })
+            );
+
+            // 5. Navigate to analysis — clean URL, no query params
+            router.push("/analysis");
         } catch (error) {
             console.error(error);
         } finally {
@@ -294,14 +306,20 @@ export default function MoodTrackerPage() {
                             </div>
 
                             {/* Notes textarea */}
-                            <textarea
-                                value={notes}
-                                onChange={handleNotesChange}
-                                onKeyDown={clOnKeyDown}
-                                className="w-full p-4 rounded-xl border border-input bg-white/50 min-h-[120px] focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none mb-4"
-                                placeholder="..."
-                                autoFocus
-                            />
+                            <div className="relative mb-4">
+                                <textarea
+                                    value={notes}
+                                    onChange={handleNotesChange}
+                                    onKeyDown={clOnKeyDown}
+                                    maxLength={2000}
+                                    className="w-full p-4 rounded-xl border border-input bg-white/50 min-h-[120px] focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none"
+                                    placeholder="..."
+                                    autoFocus
+                                />
+                                <div className="absolute bottom-3 right-3 text-xs text-muted-foreground">
+                                    {notes.length}/2000
+                                </div>
+                            </div>
 
                             {/* Cognitive Load Gauge — fades in once user starts typing */}
                             <AnimatePresence>

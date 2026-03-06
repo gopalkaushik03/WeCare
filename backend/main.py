@@ -88,7 +88,9 @@ app.add_middleware(
 from routes.analyze import router as analyze_router
 from routes.entries import router as entries_router
 from routes.trajectory import router as trajectory_router
+from routes.auth import router as auth_router
 
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(analyze_router, prefix="/api/v1", tags=["Analysis"])
 app.include_router(entries_router, prefix="/api/v1", tags=["Entries"])
 app.include_router(trajectory_router, prefix="/api/v1", tags=["Trajectory"])

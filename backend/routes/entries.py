@@ -11,9 +11,10 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 
 from models import MoodEntryCreate, MoodEntryDocument
+from services.auth_service import get_current_user
 
 log = logging.getLogger("wecare.entries")
 router = APIRouter()
@@ -70,8 +71,12 @@ def _compute_streak(dates: list[str]) -> tuple[int, int]:
 # POST /api/v1/entries — Persist an entry
 # -----------------------------------------------------------------------
 @router.post("/entries", status_code=201)
-async def create_entry(entry: MoodEntryCreate):
+async def create_entry(entry: MoodEntryCreate, user_id: str = Depends(get_current_user)):
     now = datetime.now(timezone.utc)
+    date_str = entry.date or now.date().isoformat()
+    
+    # Override any incoming user_id from the JSON payload with the cryptographically verified JWT user_id
+    entry.user_id = user_id
     date_str = entry.date or now.date().isoformat()
 
     # Build a validated MoodEntryDocument from the incoming request
@@ -93,7 +98,7 @@ async def create_entry(entry: MoodEntryCreate):
 # GET /api/v1/entries/streak — Compute streak
 # -----------------------------------------------------------------------
 @router.get("/entries/streak", response_model=StreakResponse)
-async def get_streak(user_id: str = Query(default="local_user")):
+async def get_streak(user_id: str = Depends(get_current_user)):
     from db import safe_find
     from pymongo import ASCENDING
 
@@ -122,7 +127,7 @@ async def get_streak(user_id: str = Query(default="local_user")):
 # -----------------------------------------------------------------------
 @router.get("/entries")
 async def get_entries(
-    user_id: str = Query(default="local_user"),
+    user_id: str = Depends(get_current_user),
     limit: int = Query(default=30, le=100),
 ):
     from db import safe_find

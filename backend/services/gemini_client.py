@@ -37,6 +37,11 @@ _CRISIS_PATTERNS = [
     r"\b(hurt|harm|cut|injure)\s+myself\b",
     r"\bsuicide\b(?!\s+(awareness|prevention|hotline|research|note\s+for\s+class|statistics))",
     r"\boverdose\s+(on|myself)\b",
+    # Indirect / passive crisis language
+    r"\b(everyone\s+would\s+be\s+better\s+without\s+me)\b",
+    r"\b(i\s+)?(don'?t\s+see\s+the\s+point|no\s+reason\s+to\s+(go\s+on|live|continue))\b",
+    r"\b(i\s+)?(can'?t\s+do\s+this\s+anymore|want\s+to\s+disappear|thinking\s+about\s+ending\s+it)\b",
+    r"\b(i\s+)?(feel\s+like\s+a\s+burden|wish\s+i\s+(was|were|wasn'?t)\s+(never\s+)?born)\b",
 ]
 
 _CRISIS_COMPILED = [re.compile(p, re.IGNORECASE) for p in _CRISIS_PATTERNS]
@@ -197,10 +202,12 @@ async def analyze_user_input(user_data: dict, history: list[dict] | None = None)
     - Schema-validated JSON response
     """
     notes = user_data.get("notes", "")
+    mood = user_data.get("mood", "")
 
-    # 1. Crisis Check — instant, no API call
-    if is_crisis(notes):
-        log.warning("Crisis pattern detected in user notes — returning crisis response.")
+    # 1. Crisis Check — instant, no API call. Check both mood and notes!
+    combined_text = f"{mood} {notes}"
+    if is_crisis(combined_text):
+        log.warning("Crisis pattern detected in user input — returning crisis response.")
         return CRISIS_RESPONSE
 
     # 2. Fallback if client not ready

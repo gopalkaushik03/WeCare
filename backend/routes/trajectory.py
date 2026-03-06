@@ -8,9 +8,11 @@ No ML model required — leverages risk_level ordinals from stored entries.
 """
 
 import logging
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel
 from typing import Optional
+
+from services.auth_service import get_current_user
 
 from db import MONGODB_DB
 
@@ -57,7 +59,7 @@ class TrajectoryResponse(BaseModel):
 
 @router.get("/me/trajectory", response_model=TrajectoryResponse)
 async def get_trajectory(
-    user_id: str = Query(default="local_user"),
+    user_id: str = Depends(get_current_user),
     days: int = Query(default=7, le=30),
 ):
     from services.gemini_client import predict_trajectory

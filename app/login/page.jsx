@@ -3,9 +3,12 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, Mail, Lock, ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 import AuroraBackground from "@/components/AuroraBackground";
+import { api } from "@/lib/api";
 
 export default function LoginPage() {
+    const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -36,14 +39,24 @@ export default function LoginPage() {
                         <p className="text-muted-foreground text-sm">Enter your credentials to access your safe space.</p>
                     </div>
 
-                    <form className="space-y-6" onSubmit={(e) => {
+                    <form className="space-y-6" onSubmit={async (e) => {
                         e.preventDefault();
                         if (!email || !password) {
                             setError("Please fill in all fields.");
                             return;
                         }
                         setError("");
-                        // Handle login
+                        try {
+                            const result = await api.auth.login(email, password);
+                            if (result.success && result.user.access_token) {
+                                localStorage.setItem("wc_token", result.user.access_token);
+                                router.push("/dashboard");
+                            } else {
+                                setError(result.message || "Invalid email or password");
+                            }
+                        } catch (err) {
+                            setError("An unexpected error occurred. Please try again.");
+                        }
                     }}>
                         <div className="space-y-2 group">
                             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider ml-1">Email</label>

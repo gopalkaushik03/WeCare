@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Brain, Lightbulb, BookOpen, ArrowLeft, RefreshCcw, Sparkles } from "lucide-react";
 import MotionCard from "@/components/MotionCard";
@@ -8,11 +8,13 @@ import VideoSection from "@/components/VideoSection";
 import ProfessionalSupport from "@/components/ProfessionalSupport";
 import SafetyDisclaimer from "@/components/SafetyDisclaimer";
 import { slideUp, staggerContainer } from "@/lib/motion";
-import { api } from "@/lib/api";
+
+// NOTE: api import removed — analysis/page.jsx no longer calls Gemini.
+// The result is read from sessionStorage, set by mood/page.jsx BEFORE navigation.
+// This eliminates the double Gemini API call bug (Stage 1 fix).
 
 export default function AnalysisPage() {
     const router = useRouter();
-    const searchParams = useSearchParams();
     const [analysis, setAnalysis] = useState(null);
     const [loading, setLoading] = useState(true);
     const [loadingText, setLoadingText] = useState("Understanding your thoughts...");
@@ -31,39 +33,37 @@ export default function AnalysisPage() {
         }
     }, [loading]);
 
-    // Fetch Data
+    // Read analysis from sessionStorage — set by mood/page.jsx before navigation.
+    // NO Gemini API call is made here. Single call, single cost.
     useEffect(() => {
-        const mood = searchParams.get("mood");
-        const notes = searchParams.get("notes") || "";
-        const rawScore = searchParams.get("cognitive_load_score");
-        const cognitive_load_score = rawScore ? parseInt(rawScore, 10) : null;
+        try {
+            const raw = sessionStorage.getItem("wc_analysis");
 
-        if (!mood) {
-            router.push("/mood");
-            return;
-        }
-
-        async function fetchAnalysis() {
-            try {
-                setLoading(true);
-                setError(false);
-                const result = await api.analysis.submit(mood, notes, cognitive_load_score);
-
-                if (result.success) {
-                    setAnalysis(result.analysis);
-                } else {
-                    throw new Error(result.message || "Analysis failed");
-                }
-            } catch (err) {
-                console.error("Analysis Error:", err);
-                setError(true);
-            } finally {
-                setLoading(false);
+            if (!raw) {
+                // Direct navigation or page refresh — no result in sessionStorage.
+                // Redirect back to mood entry so the user can resubmit.
+                router.push("/mood");
+                return;
             }
-        }
 
-        fetchAnalysis();
-    }, [searchParams, router]);
+            const { result } = JSON.parse(raw);
+
+            // Clean up immediately so a refresh sends the user back to /mood
+            // rather than re-displaying a stale result.
+            sessionStorage.removeItem("wc_analysis");
+
+            if (result) {
+                setAnalysis(result);
+            } else {
+                setError(true);
+            }
+        } catch (err) {
+            console.error("Analysis read error:", err);
+            setError(true);
+        } finally {
+            setLoading(false);
+        }
+    }, [router]);
 
     // Loading State
     if (loading) {

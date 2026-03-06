@@ -18,6 +18,7 @@ from slowapi.util import get_remote_address
 from services.gemini_client import analyze_user_input
 from utils.safety import get_contextual_disclaimer
 from db import MONGODB_DB
+from services.auth_service import get_current_user
 
 log = logging.getLogger("wecare.analyze")
 router = APIRouter()
@@ -27,9 +28,11 @@ limiter = Limiter(key_func=get_remote_address)
 # -----------------------------------------------------------------
 # Request / Response Models
 # -----------------------------------------------------------------
+from pydantic import BaseModel, Field
+
 class AnalyzeRequest(BaseModel):
-    mood: str
-    notes: Optional[str] = ""
+    mood: str = Field(..., min_length=1, max_length=100)
+    notes: Optional[str] = Field(default="", max_length=2000)
     cognitive_load_score: Optional[float] = None  # 0–100, from frontend typing analysis
 
 
@@ -54,7 +57,7 @@ class AnalyzeResponse(BaseModel):
 async def analyze_mood(
     request: Request,
     body: AnalyzeRequest,
-    user_id: Optional[str] = Query(None, description="User ID for history lookup"),
+    user_id: str = Depends(get_current_user),
 ):
     """
     Analyzes mood and notes using Gemini AI with longitudinal context.

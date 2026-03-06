@@ -3,9 +3,12 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, User, Mail, Lock, ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 import AuroraBackground from "@/components/AuroraBackground";
+import { api } from "@/lib/api";
 
 export default function SignupPage() {
+    const router = useRouter();
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -37,14 +40,24 @@ export default function SignupPage() {
                         <p className="text-muted-foreground text-sm">Begin your journey to mindfulness today.</p>
                     </div>
 
-                    <form className="space-y-5" onSubmit={(e) => {
+                    <form className="space-y-5" onSubmit={async (e) => {
                         e.preventDefault();
                         if (!name || !email || !password) {
                             setError("Please fill in all fields.");
                             return;
                         }
                         setError("");
-                        // Handle signup
+                        try {
+                            const result = await api.auth.signup(name, email, password);
+                            if (result.success && result.user.access_token) {
+                                localStorage.setItem("wc_token", result.user.access_token);
+                                router.push("/dashboard");
+                            } else {
+                                setError(result.message || "Failed to create account");
+                            }
+                        } catch (err) {
+                            setError("An unexpected error occurred. Please try again.");
+                        }
                     }}>
                         <div className="space-y-2 group">
                             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider ml-1">Full Name</label>
