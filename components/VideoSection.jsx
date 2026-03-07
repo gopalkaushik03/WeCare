@@ -14,7 +14,7 @@ export default function VideoSection({ riskLevel = "low" }) {
             variants={slideUp}
             initial="initial"
             animate="animate"
-            className="w-full"
+            className="w-full mb-8"
         >
             <div className="mb-4 flex items-center gap-2">
                 <Video className="w-5 h-5 text-primary" />
@@ -25,9 +25,9 @@ export default function VideoSection({ riskLevel = "low" }) {
 
             <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-border/50 overflow-hidden shadow-sm">
                 {/* Video Embed */}
-                <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+                <div className="w-full aspect-video overflow-hidden">
                     <iframe
-                        className="absolute top-0 left-0 w-full h-full"
+                        className="w-full h-full"
                         src={`https://www.youtube.com/embed/${video.id}?rel=0&modestbranding=1`}
                         title={video.title}
                         frameBorder="0"
