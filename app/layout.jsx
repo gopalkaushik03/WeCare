@@ -13,18 +13,21 @@ export const metadata = {
 };
 
 import { MoodProvider } from "@/context/MoodContext";
+import { UserProvider } from "@/context/UserContext";
 
 export default function RootLayout({ children }) {
     return (
         <html lang="en">
             <body className={cn(inter.variable, outfit.variable, "font-sans min-h-screen flex flex-col transition-colors duration-500")}>
-                <MoodProvider>
-                    <Navbar />
-                    <main className="flex-1 flex flex-col pt-20">
-                        {children}
-                    </main>
-                    <Footer />
-                </MoodProvider>
+                <UserProvider>
+                    <MoodProvider>
+                        <Navbar />
+                        <main className="flex-1 flex flex-col pt-20">
+                            {children}
+                        </main>
+                        <Footer />
+                    </MoodProvider>
+                </UserProvider>
             </body>
         </html>
     );

@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useMood } from "@/context/MoodContext";
+import { useUser } from "@/context/UserContext";
+import { api } from "@/lib/api";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import { ZenGarden, ThoughtShredder } from "@/components/Widgets";
 import SonicTherapy from "@/components/SonicTherapy";
@@ -20,8 +22,10 @@ import TrajectoryWidget from "@/components/TrajectoryWidget";
 
 export default function DashboardPage() {
     const { mood } = useMood();
+    const { user } = useUser();
     const router = useRouter();
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+    const [streak, setStreak] = useState(0);
 
     useEffect(() => {
         const token = localStorage.getItem("wc_token");
@@ -32,7 +36,15 @@ export default function DashboardPage() {
         }
     }, [router]);
 
-    const user = "Demo User";
+    useEffect(() => {
+        if (!isCheckingAuth) {
+            api.mood.streak().then((res) => {
+                setStreak(res.current || 0);
+            }).catch(() => setStreak(0));
+        }
+    }, [isCheckingAuth]);
+
+    const displayName = user?.name || "Explorer";
 
     const container = {
         hidden: {},
@@ -71,11 +83,11 @@ export default function DashboardPage() {
                 <div>
                     <div className="flex items-baseline gap-3">
                         <StaggeredText
-                            text={`${greeting}, ${user}`}
+                            text={`${greeting}, ${displayName}`}
                             className="text-2xl md:text-3xl font-display font-medium text-slate-800 dark:text-white mb-2"
                         />
                         <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-bold border border-primary/20">
-                            3 Day Streak 🔥
+                            {streak} Day Streak 🔥
                         </span>
                     </div>
                     <motion.p

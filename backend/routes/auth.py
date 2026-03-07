@@ -1,11 +1,11 @@
 import logging
 from typing import Any
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
 from datetime import timedelta
 
 from models import UserCreate, UserLogin, Token
-from services.auth_service import get_password_hash, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from services.auth_service import get_password_hash, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, get_current_user
 from db import safe_insert, safe_find
 
 log = logging.getLogger("wecare.auth")
@@ -70,4 +70,16 @@ async def login(credentials: UserLogin) -> Any:
         "token_type": "bearer",
         "user_id": user["user_id"],
         "name": user["name"]
+    }
+
+@router.get("/me")
+async def get_me(user_id: str = Depends(get_current_user)) -> Any:
+    users = await safe_find("users", {"user_id": user_id}, limit=1)
+    if not users:
+        raise HTTPException(status_code=404, detail="User not found")
+    user = users[0]
+    return {
+        "user_id": user["user_id"],
+        "name": user["name"],
+        "email": user["email"]
     }
