@@ -1,5 +1,6 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useMood } from "@/context/MoodContext";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
@@ -19,6 +20,18 @@ import TrajectoryWidget from "@/components/TrajectoryWidget";
 
 export default function DashboardPage() {
     const { mood } = useMood();
+    const router = useRouter();
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+    useEffect(() => {
+        const token = localStorage.getItem("wc_token");
+        if (!token) {
+            router.push("/login");
+        } else {
+            setIsCheckingAuth(false);
+        }
+    }, [router]);
+
     const user = "Demo User";
 
     const container = {
@@ -48,6 +61,8 @@ export default function DashboardPage() {
     // Adaptive Card Style
     const cardStyle = "bg-white border-gray-200 text-slate-900 shadow-sm dark:bg-white/5 dark:border-white/10 dark:text-white transition-colors duration-500";
     // Base texts are handled by text-foreground which adapts via globals.css
+
+    if (isCheckingAuth) return null;
 
     return (
         <div className="min-h-screen p-6 pb-24 md:p-12 space-y-8 max-w-7xl mx-auto">

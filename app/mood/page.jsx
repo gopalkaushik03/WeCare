@@ -136,6 +136,17 @@ export default function MoodTrackerPage() {
     const { setMood, setRawMood } = useMood();
     const { score: clScore, onKeyDown: clOnKeyDown, reset: clReset } = useCognitiveLoad();
 
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+    useEffect(() => {
+        const token = localStorage.getItem("wc_token");
+        if (!token) {
+            router.push("/login");
+        } else {
+            setIsCheckingAuth(false);
+        }
+    }, [router]);
+
     const [step, setStep] = useState(1);
     const [selectedMood, setSelectedMood] = useState(null);
     const [notes, setNotes] = useState("");
@@ -198,6 +209,8 @@ export default function MoodTrackerPage() {
         setNotes(e.target.value);
         if (!showGauge && e.target.value.length > 5) setShowGauge(true);
     };
+
+    if (isCheckingAuth) return null;
 
     // Step 3 success screen (unchanged from original)
     if (step === 3) {

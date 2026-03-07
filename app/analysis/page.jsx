@@ -36,6 +36,12 @@ export default function AnalysisPage() {
     // Read analysis from sessionStorage — set by mood/page.jsx before navigation.
     // NO Gemini API call is made here. Single call, single cost.
     useEffect(() => {
+        const token = localStorage.getItem("wc_token");
+        if (!token) {
+            router.push("/login");
+            return;
+        }
+
         try {
             const raw = sessionStorage.getItem("wc_analysis");
 
