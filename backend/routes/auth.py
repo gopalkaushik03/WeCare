@@ -35,7 +35,13 @@ async def signup(user: UserCreate) -> Any:
         "created_at": datetime.now(timezone.utc)
     }
     
-    await safe_insert("users", new_user)
+    inserted_id = await safe_insert("users", new_user)
+    if not inserted_id:
+        log.error("[SIGNUP] safe_insert returned None for email=%s — DB may be down or duplicate key.", user.email)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Account could not be created. Please try again later."
+        )
     
     # Create token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
