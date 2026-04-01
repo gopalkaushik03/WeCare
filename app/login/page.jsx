@@ -12,6 +12,7 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
     return (
         <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-background">
@@ -46,6 +47,7 @@ export default function LoginPage() {
                             return;
                         }
                         setError("");
+                        setIsLoading(true);
                         try {
                             const result = await api.auth.login(email, password);
                             if (result.success && result.user.access_token) {
@@ -56,6 +58,8 @@ export default function LoginPage() {
                             }
                         } catch (err) {
                             setError("An unexpected error occurred. Please try again.");
+                        } finally {
+                            setIsLoading(false);
                         }
                     }}>
                         <div className="space-y-2 group">
@@ -97,11 +101,13 @@ export default function LoginPage() {
                         )}
 
                         <motion.button
-                            whileHover={{ scale: 1.02, boxShadow: "0 0 20px rgba(102, 252, 241, 0.3)" }}
-                            whileTap={{ scale: 0.98 }}
-                            className="w-full bg-primary text-primary-foreground font-bold py-3.5 rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 mt-8"
+                            type="submit"
+                            disabled={isLoading}
+                            whileHover={!isLoading ? { scale: 1.02, boxShadow: "0 0 20px rgba(102, 252, 241, 0.3)" } : {}}
+                            whileTap={!isLoading ? { scale: 0.98 } : {}}
+                            className="w-full bg-primary text-primary-foreground font-bold py-3.5 rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 mt-8 disabled:opacity-60 disabled:cursor-not-allowed transition-opacity"
                         >
-                            Sign In <ArrowRight className="w-4 h-4" />
+                            {isLoading ? "Signing in…" : (<>Sign In <ArrowRight className="w-4 h-4" /></>)}
                         </motion.button>
 
                         <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/70 mt-4">
