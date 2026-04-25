@@ -23,7 +23,7 @@ export default function VideoSection({ riskLevel = "low" }) {
                 </h2>
             </div>
 
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-border/50 overflow-hidden shadow-sm">
+            <div className="glass-card overflow-hidden shadow-xl">
                 {/* Video Embed */}
                 <div className="w-full aspect-video overflow-hidden">
                     <iframe
@@ -39,17 +39,17 @@ export default function VideoSection({ riskLevel = "low" }) {
                 {/* Video Info */}
                 <div className="p-6">
                     <div className="flex items-start gap-3">
-                        <div className="bg-primary/10 p-2 rounded-lg mt-1">
+                        <div className="bg-primary/15 p-2 rounded-lg mt-1">
                             <Play className="w-5 h-5 text-primary" />
                         </div>
                         <div className="flex-1">
-                            <h3 className="font-semibold text-lg text-foreground mb-1">
+                            <h3 className="font-semibold text-lg text-white mb-1">
                                 {video.title}
                             </h3>
-                            <p className="text-muted-foreground text-sm mb-3">
+                            <p className="text-white/70 text-sm mb-3">
                                 {video.description}
                             </p>
-                            <span className="inline-block px-3 py-1 bg-primary/5 text-primary text-xs font-medium rounded-full border border-primary/20">
+                            <span className="inline-block px-3 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full border border-primary/30">
                                 {video.category}
                             </span>
                         </div>

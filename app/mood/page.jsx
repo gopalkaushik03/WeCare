@@ -308,7 +308,7 @@ export default function MoodTrackerPage() {
                             ← Back to moods
                         </button>
 
-                        <MotionCard className="p-8 bg-white/60 backdrop-blur-md">
+                        <MotionCard className="p-8 glass-card">
                             <div className="text-center mb-6">
                                 <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
                                     Reflection
@@ -325,11 +325,11 @@ export default function MoodTrackerPage() {
                                     onChange={handleNotesChange}
                                     onKeyDown={clOnKeyDown}
                                     maxLength={2000}
-                                    className="w-full p-4 rounded-xl border border-input bg-white/50 min-h-[120px] focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none"
-                                    placeholder="..."
+                                    className="glass-input w-full p-4 min-h-[120px] resize-none"
+                                    placeholder="Share your thoughts here…"
                                     autoFocus
                                 />
-                                <div className="absolute bottom-3 right-3 text-xs text-muted-foreground">
+                                <div className="absolute bottom-3 right-3 text-xs text-white/45">
                                     {notes.length}/2000
                                 </div>
                             </div>
@@ -344,10 +344,10 @@ export default function MoodTrackerPage() {
                                         className="flex items-center justify-between mb-4 px-3 py-2 rounded-xl bg-white/5 border border-white/10"
                                     >
                                         <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-white/50">
                                                 Mental Effort Detected
                                             </p>
-                                            <p className="text-[11px] text-muted-foreground/70 mt-0.5">
+                                            <p className="text-[11px] text-white/40 mt-0.5">
                                                 Based on your typing rhythm — not shared with anyone.
                                             </p>
                                         </div>

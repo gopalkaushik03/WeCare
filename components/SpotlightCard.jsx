@@ -16,7 +16,7 @@ export default function SpotlightCard({ children, className = "" }) {
     return (
         <div
             className={cn(
-                "group relative border border-white/10 bg-gray-900/50 overflow-hidden rounded-3xl",
+                "group relative border border-white/12 bg-white/[0.07] backdrop-blur-xl overflow-hidden rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.35)]",
                 className
             )}
             onMouseMove={handleMouseMove}

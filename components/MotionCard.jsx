@@ -11,12 +11,12 @@ export default function MotionCard({ children, className, delay = 0, hoverEffect
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: delay, ease: "easeOut" }}
             className={cn(
-                "relative group transition-all duration-200 ease-out", // Snappy transition
+                "relative group transition-all duration-200 ease-out",
                 "rounded-2xl p-6",
                 glass
                     ? "glass-card"
-                    : "bg-card border border-border shadow-sm",
-                hoverEffect && "hover:-translate-y-1 hover:shadow-xl hover:scale-[1.01]", // Physical lift
+                    : "glass-card",
+                hoverEffect && "hover:-translate-y-1 hover:shadow-xl hover:scale-[1.01]",
                 className
             )}
         >
