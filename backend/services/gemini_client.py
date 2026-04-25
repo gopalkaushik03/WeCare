@@ -126,7 +126,7 @@ _GENERATE_CONFIG = types.GenerateContentConfig(
     temperature=0.7,
 )
 
-MODEL_NAME = "models/gemini-2.5-flash"
+MODEL_NAME = "gemini-2.5-flash"
 
 # -----------------------------------------------------------------------
 # System Prompt Loader

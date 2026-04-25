@@ -71,7 +71,7 @@ export default function DashboardPage() {
     }, []);
 
     // Adaptive Card Style
-    const cardStyle = "bg-white border-gray-200 text-slate-900 shadow-sm dark:bg-white/5 dark:border-white/10 dark:text-white transition-colors duration-500";
+    const cardStyle = "border-white/12 text-white transition-colors duration-500";
     // Base texts are handled by text-foreground which adapts via globals.css
 
     if (isCheckingAuth) return null;

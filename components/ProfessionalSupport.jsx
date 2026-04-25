@@ -48,9 +48,10 @@ export default function ProfessionalSupport({ riskLevel = "low" }) {
                         {support.primary.map((resource, idx) => (
                             <div
                                 key={idx}
-                                className={`p-5 rounded-xl border transition-all ${riskLevel === 'high' && resource.type === 'crisis'
-                                        ? 'bg-red-50 border-red-300 shadow-md'
-                                        : 'bg-white/60 backdrop-blur-sm border-border/50 hover:shadow-md'
+                                className={`p-5 rounded-xl border transition-all ${
+                                        riskLevel === 'high' && resource.type === 'crisis'
+                                            ? 'bg-red-950/60 border-red-500/40 shadow-md backdrop-blur-sm'
+                                            : 'glass-card hover:shadow-xl hover:border-white/25'
                                     }`}
                             >
                                 {/* Helpline Card */}
@@ -63,10 +64,10 @@ export default function ProfessionalSupport({ riskLevel = "low" }) {
                                                 }`}>
                                                 {resource.name}
                                             </h3>
-                                            <p className="text-muted-foreground text-sm mb-3">
+                                            <p className="text-white/75 text-sm mb-3">
                                                 {resource.description}
                                             </p>
-                                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                                            <div className="flex items-center gap-2 text-sm text-white/60 mb-2">
                                                 <Clock className="w-4 h-4" />
                                                 <span>{resource.availability}</span>
                                             </div>
@@ -88,13 +89,13 @@ export default function ProfessionalSupport({ riskLevel = "low" }) {
                                         <h3 className="font-semibold text-lg mb-1 text-foreground">
                                             {resource.name}
                                         </h3>
-                                        <p className="text-muted-foreground text-sm mb-3">
+                                        <p className="text-white/75 text-sm mb-3">
                                             {resource.description}
                                         </p>
                                         {resource.features && (
                                             <ul className="mb-4 space-y-1">
                                                 {resource.features.map((feature, fIdx) => (
-                                                    <li key={fIdx} className="text-sm text-muted-foreground flex items-center gap-2">
+                                                    <li key={fIdx} className="text-sm text-white/80 flex items-center gap-2">
                                                         <span className="w-1.5 h-1.5 bg-primary rounded-full" />
                                                         {feature}
                                                     </li>
@@ -128,13 +129,13 @@ export default function ProfessionalSupport({ riskLevel = "low" }) {
                         {support.secondary.map((resource, idx) => (
                             <div
                                 key={idx}
-                                className="p-4 bg-white/40 backdrop-blur-sm rounded-lg border border-border/30 hover:bg-white/60 transition-all"
+                                className="glass-card p-4 rounded-lg hover:border-white/25 transition-all"
                             >
                                 {resource.phone ? (
                                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                         <div>
                                             <h4 className="font-medium text-foreground">{resource.name}</h4>
-                                            <p className="text-xs text-muted-foreground">{resource.availability}</p>
+                                            <p className="text-xs text-white/55">{resource.availability}</p>
                                         </div>
                                         <a
                                             href={`tel:${resource.phone}`}
@@ -148,7 +149,7 @@ export default function ProfessionalSupport({ riskLevel = "low" }) {
                                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                         <div>
                                             <h4 className="font-medium text-foreground">{resource.name}</h4>
-                                            <p className="text-xs text-muted-foreground">{resource.description}</p>
+                                            <p className="text-xs text-white/55">{resource.description}</p>
                                         </div>
                                         <a
                                             href={resource.url}

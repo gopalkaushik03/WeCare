@@ -12,8 +12,8 @@ export default function MoodCard({ label, icon: Icon, color, onClick, isSelected
             className={cn(
                 "relative flex flex-col items-center justify-center p-6 rounded-2xl border transition-all duration-300 w-full aspect-square",
                 isSelected
-                    ? "bg-white shadow-md border-primary ring-2 ring-primary/20"
-                    : "bg-white/50 border-transparent hover:bg-white hover:shadow-sm"
+                    ? "bg-white/15 border-primary ring-2 ring-primary/30 shadow-lg shadow-primary/10"
+                    : "bg-white/6 border-white/10 hover:bg-white/12 hover:border-white/20 hover:shadow-md"
             )}
         >
             <div className={cn("p-4 rounded-full mb-3 transition-colors", color)}>
