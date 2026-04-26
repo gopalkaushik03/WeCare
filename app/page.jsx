@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, TrendingUp, Sparkles, Headphones } from "lucide-react";
 import SpotlightCard from "@/components/SpotlightCard";
 import SceneErrorBoundary from "@/components/SceneErrorBoundary";
-import { CSSParticles } from "@/components/SceneErrorBoundary";
+import CanvasParticles from "@/components/CanvasParticles";
 
 // Dynamically import Scene (R3F) - client-side only
 const Scene = dynamic(() => import("@/components/Scene"), {
@@ -52,7 +52,7 @@ export default function Home() {
                             <Scene />
                         </SceneErrorBoundary>
                     ) : (
-                        <CSSParticles />
+                        <CanvasParticles />
                     )}
                 </>
             )}
