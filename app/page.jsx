@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { ArrowRight, TrendingUp, Sparkles, Headphones } from "lucide-react";
 import SpotlightCard from "@/components/SpotlightCard";
+import SceneErrorBoundary from "@/components/SceneErrorBoundary";
 
 // Dynamically import Scene (R3F) - client-side only
 const Scene = dynamic(() => import("@/components/Scene"), {
@@ -29,7 +30,9 @@ export default function Home() {
             {mounted && (
                 <>
                     <div className="fixed inset-0 z-0 animate-subtle-gradient opacity-60 pointer-events-none" />
-                    <Scene />
+                    <SceneErrorBoundary>
+                        <Scene />
+                    </SceneErrorBoundary>
                 </>
             )}
 
