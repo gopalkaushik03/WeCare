@@ -1,157 +1,209 @@
 "use client";
 import { useRef, useEffect } from "react";
 
-const PARTICLE_COUNT = 350;
-const COLORS = [
-    [34,  211, 238], // cyan-400
-    [168, 85,  247], // purple-500
-    [99,  102, 241], // indigo-500
-    [236, 72,  153], // pink-500
-    [56,  189, 248], // sky-400
+// ─── Config ───────────────────────────────────────────────────────────────────
+const COUNT        = 250;
+const CONNECT_DIST = 120;   // px — draw line between particles closer than this
+const MOUSE_RADIUS = 180;   // px — mouse influence zone
+const REPEL_FORCE  = 40;    // px — how hard particles push away from cursor
+const SPRING       = 0.13;  // how fast particles chase their target (higher = faster)
+const DRIFT_SPEED  = 0.25;  // base particle drift speed (px / frame)
+
+// Muted palette: subtle, matches #0B0C10 dark theme
+// [r, g, b, alpha]
+const PALETTE = [
+    [147, 197, 253, 0.55],   // blue-300
+    [167, 139, 250, 0.50],   // violet-400
+    [96,  165, 250, 0.48],   // blue-400
+    [52,  211, 153, 0.38],   // emerald-400  (accent)
+    [255, 255, 255, 0.25],   // white star
+    [196, 181, 253, 0.42],   // violet-300
+    [125, 211, 252, 0.40],   // sky-300
 ];
 
-/** Build the heart-target positions for every particle. */
-function buildHeartPositions(count, W, H) {
-    const scale = Math.min(W, H) * 0.038; // responsive
-    const cx = W / 2;
-    const cy = H / 2 - H * 0.04;
-    return Array.from({ length: count }, (_, i) => {
-        const t = (i / count) * Math.PI * 2;
+// ─── Heart target positions ───────────────────────────────────────────────────
+function heartTargets(n, W, H) {
+    const s  = Math.min(W, H) * 0.034;
+    const cx = W / 2, cy = H / 2 - H * 0.03;
+    return Array.from({ length: n }, (_, i) => {
+        const t = (i / n) * Math.PI * 2;
         const x = 16 * Math.pow(Math.sin(t), 3);
         const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
-        return { x: cx + x * scale, y: cy + y * scale };
+        return [cx + x * s, cy + y * s];
     });
 }
 
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function CanvasParticles() {
-    const canvasRef = useRef(null);
+    const ref = useRef(null);
 
     useEffect(() => {
-        const canvas = canvasRef.current;
+        const canvas = ref.current;
         if (!canvas) return;
         const ctx = canvas.getContext("2d");
 
-        // ── State ────────────────────────────────────────────────────────────
-        let W = window.innerWidth;
-        let H = window.innerHeight;
-        let mouse = { x: W / 2, y: H / 2 };
-        let scrollProgress = 0;
-        let heartPos = buildHeartPositions(PARTICLE_COUNT, W, H);
-        let animId;
+        // Shared mutable state
+        let W = 0, H = 0;
+        let hearts = [];
+        let mouse = { x: -9999, y: -9999 };
+        let scroll = 0;
+        let raf;
 
+        // ── Resize ─────────────────────────────────────────────────────────
         const resize = () => {
             W = canvas.width  = window.innerWidth;
             H = canvas.height = window.innerHeight;
-            heartPos = buildHeartPositions(PARTICLE_COUNT, W, H);
-            particles.forEach((p, i) => {
-                p.hx = heartPos[i].x;
-                p.hy = heartPos[i].y;
-            });
+            hearts = heartTargets(COUNT, W, H);
+            pts.forEach((p, i) => { p.hx = hearts[i][0]; p.hy = hearts[i][1]; });
         };
-        canvas.width  = W;
-        canvas.height = H;
 
-        // ── Particles ─────────────────────────────────────────────────────────
-        const particles = Array.from({ length: PARTICLE_COUNT }, (_, i) => {
-            const [r, g, b] = COLORS[i % COLORS.length];
+        // ── Particles ──────────────────────────────────────────────────────
+        // Initialise AFTER we know W/H
+        W = canvas.width  = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+        hearts = heartTargets(COUNT, W, H);
+
+        const pts = Array.from({ length: COUNT }, (_, i) => {
+            const [r, g, b, a] = PALETTE[i % PALETTE.length];
+            // Random start positions scattered over the canvas
+            const rx = Math.random() * W;
+            const ry = Math.random() * H;
             return {
-                // random start positions
-                rx: Math.random() * W,
-                ry: Math.random() * H,
-                // heart target
-                hx: heartPos[i].x,
-                hy: heartPos[i].y,
-                // live position (starts at random)
-                x: Math.random() * W,
-                y: Math.random() * H,
-                // core dot size (px)
-                size: i % 7 === 0 ? 2.5 + Math.random()
-                     : i % 3 === 0 ? 1.5 + Math.random() * 0.5
-                     : 1 + Math.random() * 0.5,
-                // colour
-                r, g, b,
-                // individual float parameters
-                phase:      Math.random() * Math.PI * 2,
-                floatSpd:   0.0008 + Math.random() * 0.0012,
-                floatAmpX:  15 + Math.random() * 25,
-                floatAmpY:  10 + Math.random() * 20,
-                // opacity base
-                alpha: 0.65 + Math.random() * 0.35,
+                // Random home (idle drifting target)
+                rx, ry,
+                // Heart target (scroll target)
+                hx: hearts[i][0],
+                hy: hearts[i][1],
+                // Live position
+                x: rx, y: ry,
+                // Velocity (for drifting)
+                vx: (Math.random() - 0.5) * DRIFT_SPEED,
+                vy: (Math.random() - 0.5) * DRIFT_SPEED,
+                // Appearance
+                r, g, b, a,
+                size: 0.8 + Math.random() * 1.4,   // 0.8 – 2.2 px core
+                // Phase for gentle wobble
+                phase: Math.random() * Math.PI * 2,
             };
         });
 
-        // ── Event handlers ────────────────────────────────────────────────────
-        const onMouseMove = (e) => { mouse.x = e.clientX; mouse.y = e.clientY; };
-        const onScroll    = () => {
-            const max = document.body.scrollHeight - window.innerHeight;
-            scrollProgress = max > 0 ? Math.min(window.scrollY / max, 1) : 0;
+        // ── Events ─────────────────────────────────────────────────────────
+        const onMove   = (e) => { mouse.x = e.clientX; mouse.y = e.clientY; };
+        const onScroll = () => {
+            const max = document.documentElement.scrollHeight - window.innerHeight;
+            scroll = max > 0 ? Math.min(window.scrollY / max, 1) : 0;
         };
-        window.addEventListener("mousemove", onMouseMove);
-        window.addEventListener("scroll",    onScroll,    { passive: true });
+        window.addEventListener("mousemove", onMove);
+        window.addEventListener("scroll",    onScroll, { passive: true });
         window.addEventListener("resize",    resize);
 
-        // ── Animation loop ────────────────────────────────────────────────────
-        const REPEL_RADIUS  = 110;  // px — mouse repulsion zone
-        const REPEL_STRENGTH = 10;  // px  — max push
-
-        const animate = (ts) => {
-            // Dark background with slight trail (motion blur feel)
-            ctx.fillStyle = "rgba(11,12,16,0.38)";
+        // ── Draw loop ──────────────────────────────────────────────────────
+        const draw = (ts) => {
+            // Full clear — clean look (no trails)
+            ctx.clearRect(0, 0, W, H);
+            ctx.fillStyle = "#0B0C10";
             ctx.fillRect(0, 0, W, H);
 
-            const prog = scrollProgress;
+            const prog = scroll;
 
-            for (const p of particles) {
-                // ── Target interpolation (random ↔ heart) ──────────────────
+            // ── Update positions ──────────────────────────────────────────
+            for (const p of pts) {
+                // Target: lerp between drifting home and heart
                 const tx = p.rx + (p.hx - p.rx) * prog;
                 const ty = p.ry + (p.hy - p.ry) * prog;
 
-                // Float gently when scattered; stop when heart forms
-                const floatScale = 1 - Math.min(prog * 1.8, 1);
-                const fx = Math.sin(ts * p.floatSpd + p.phase)           * p.floatAmpX * floatScale;
-                const fy = Math.cos(ts * p.floatSpd * 0.7 + p.phase + 1) * p.floatAmpY * floatScale;
-
-                // ── Mouse repulsion ─────────────────────────────────────────
-                const dx = p.x - mouse.x;
-                const dy = p.y - mouse.y;
-                const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                let rx = 0, ry = 0;
-                if (dist < REPEL_RADIUS) {
-                    const force = ((REPEL_RADIUS - dist) / REPEL_RADIUS) ** 2;
-                    rx = (dx / dist) * force * REPEL_STRENGTH;
-                    ry = (dy / dist) * force * REPEL_STRENGTH;
+                // Drift only when scattered
+                if (prog < 0.05) {
+                    p.rx += p.vx;
+                    p.ry += p.vy;
+                    // Bounce off edges
+                    if (p.rx < 0 || p.rx > W) p.vx *= -1;
+                    if (p.ry < 0 || p.ry > H) p.vy *= -1;
                 }
 
-                // ── Smooth spring towards target + float + repel ────────────
-                p.x += (tx + fx + rx - p.x) * 0.06;
-                p.y += (ty + fy + ry - p.y) * 0.06;
+                // Mouse repulsion — fast spring
+                const dx   = p.x - mouse.x;
+                const dy   = p.y - mouse.y;
+                const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                let repX = 0, repY = 0;
+                if (dist < MOUSE_RADIUS) {
+                    const f = ((MOUSE_RADIUS - dist) / MOUSE_RADIUS) ** 2;
+                    repX = (dx / dist) * f * REPEL_FORCE;
+                    repY = (dy / dist) * f * REPEL_FORCE;
+                }
 
-                // ── Draw glow halo ──────────────────────────────────────────
-                const glowR = p.size * 8;
-                const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
-                grad.addColorStop(0,   `rgba(${p.r},${p.g},${p.b},${p.alpha * 0.6})`);
-                grad.addColorStop(0.4, `rgba(${p.r},${p.g},${p.b},${p.alpha * 0.15})`);
-                grad.addColorStop(1,   `rgba(${p.r},${p.g},${p.b},0)`);
+                // Spring towards target (fast)
+                p.x += (tx + repX - p.x) * SPRING;
+                p.y += (ty + repY - p.y) * SPRING;
+            }
+
+            // ── Draw connection lines (constellation / frame effect) ───────
+            ctx.save();
+            for (let i = 0; i < COUNT; i++) {
+                const a = pts[i];
+                for (let j = i + 1; j < COUNT; j++) {
+                    const b = pts[j];
+                    const dx = a.x - b.x;
+                    const dy = a.y - b.y;
+                    const d  = Math.sqrt(dx * dx + dy * dy);
+                    if (d < CONNECT_DIST) {
+                        // Line alpha fades with distance; extra bright near heart
+                        const baseFade  = 1 - d / CONNECT_DIST;
+                        const heartBoost = prog * 0.5;          // brighter when heart forms
+                        const lineAlpha  = (baseFade * 0.12 + heartBoost * baseFade * 0.25);
+                        ctx.beginPath();
+                        ctx.moveTo(a.x, a.y);
+                        ctx.lineTo(b.x, b.y);
+                        ctx.strokeStyle = `rgba(147,197,253,${lineAlpha})`;
+                        ctx.lineWidth   = 0.5;
+                        ctx.stroke();
+                    }
+                }
+
+                // Lines from mouse to nearby particles
+                const mdx  = a.x - mouse.x;
+                const mdy  = a.y - mouse.y;
+                const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
+                if (mdist < MOUSE_RADIUS * 0.75) {
+                    const f = 1 - mdist / (MOUSE_RADIUS * 0.75);
+                    ctx.beginPath();
+                    ctx.moveTo(a.x, a.y);
+                    ctx.lineTo(mouse.x, mouse.y);
+                    ctx.strokeStyle = `rgba(167,139,250,${f * 0.35})`;
+                    ctx.lineWidth   = 0.6;
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
+
+            // ── Draw particles ────────────────────────────────────────────
+            for (const p of pts) {
+                // Soft glow (very small, not neon)
+                const glowR = p.size * 5;
+                const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
+                g.addColorStop(0,   `rgba(${p.r},${p.g},${p.b},${p.a * 0.45})`);
+                g.addColorStop(0.5, `rgba(${p.r},${p.g},${p.b},${p.a * 0.1})`);
+                g.addColorStop(1,   `rgba(${p.r},${p.g},${p.b},0)`);
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
-                ctx.fillStyle = grad;
+                ctx.fillStyle = g;
                 ctx.fill();
 
-                // ── Draw solid core ─────────────────────────────────────────
+                // Crisp solid core
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${p.alpha})`;
+                ctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${p.a})`;
                 ctx.fill();
             }
 
-            animId = requestAnimationFrame(animate);
+            raf = requestAnimationFrame(draw);
         };
 
-        animId = requestAnimationFrame(animate);
+        raf = requestAnimationFrame(draw);
 
         return () => {
-            cancelAnimationFrame(animId);
-            window.removeEventListener("mousemove", onMouseMove);
+            cancelAnimationFrame(raf);
+            window.removeEventListener("mousemove", onMove);
             window.removeEventListener("scroll",    onScroll);
             window.removeEventListener("resize",    resize);
         };
@@ -159,9 +211,12 @@ export default function CanvasParticles() {
 
     return (
         <canvas
-            ref={canvasRef}
-            className="fixed inset-0 z-0"
-            style={{ display: "block", background: "#0B0C10" }}
+            ref={ref}
+            style={{
+                position: "fixed", inset: 0, zIndex: 0,
+                display: "block", background: "#0B0C10",
+                pointerEvents: "none",
+            }}
         />
     );
 }
