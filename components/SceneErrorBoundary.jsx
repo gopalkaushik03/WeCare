@@ -2,31 +2,42 @@
 import { Component } from "react";
 
 /* ─── CSS-only particle fallback ───────────────────────────────────────────
-   Renders 60 absolutely-positioned dots with randomised positions, sizes,
-   colours (cyan / purple mix) and staggered float animations.
-   Works on every browser — no WebGL, no Canvas, no external deps.
+   120 absolutely-positioned glowing dots — deterministic positions, varied
+   sizes/colours, staggered float + twinkle animations.
+   Zero WebGL, works on every browser.
    ───────────────────────────────────────────────────────────────────────── */
 function CSSParticles() {
-    const particles = Array.from({ length: 60 }, (_, i) => {
-        const x = Math.floor(Math.sin(i * 137.508) * 50 + 50);   // deterministic
-        const y = Math.floor(Math.cos(i * 137.508) * 50 + 50);
-        const size = (i % 4) + 1;
-        const duration = 6 + (i % 8);
-        const delay = -(i * 0.4);
-        // alternate cyan / purple
-        const color = i % 3 === 0
-            ? "rgba(34,211,238,0.7)"   // cyan-400
-            : i % 3 === 1
-                ? "rgba(168,85,247,0.7)"  // purple-500
-                : "rgba(99,102,241,0.6)"; // indigo-500
+    const particles = Array.from({ length: 120 }, (_, i) => {
+        // Use golden-angle spacing for even distribution
+        const x = ((Math.sin(i * 137.508 * (Math.PI / 180)) + 1) / 2) * 100;
+        const y = ((Math.cos(i * 97.32 * (Math.PI / 180)) + 1) / 2) * 100;
+        // Sizes: mix of tiny stars and larger glowing orbs
+        const size = i % 7 === 0 ? 6 + (i % 3)     // large orb  (6-8 px)
+                   : i % 3 === 0 ? 3 + (i % 3)     // medium     (3-5 px)
+                   :               2;               // small star (2 px)
+        const duration  = 5 + (i % 9);
+        const delay     = -(i * 0.35);
+        const twinkle   = 3 + (i % 5);
+        // Cyan / purple / indigo / pink palette
+        const palette = [
+            "rgba(34,211,238,0.9)",   // cyan-400
+            "rgba(168,85,247,0.85)",  // purple-500
+            "rgba(99,102,241,0.8)",   // indigo-500
+            "rgba(236,72,153,0.75)",  // pink-500
+            "rgba(34,211,238,0.6)",   // cyan dim
+        ];
+        const color = palette[i % palette.length];
+        const glow  = `0 0 ${size * 4}px ${color}, 0 0 ${size * 8}px ${color}`;
 
-        return { x, y, size, duration, delay, color };
+        return { x, y, size, duration, delay, twinkle, color, glow };
     });
 
     return (
         <div className="fixed inset-0 z-0 bg-[#0B0C10] overflow-hidden">
-            {/* subtle gradient glow */}
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/20 via-[#0B0C10] to-purple-900/20" />
+            {/* background gradient glow */}
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/30 via-[#0B0C10] to-purple-900/30" />
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl" />
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl" />
 
             {/* particles */}
             {particles.map((p, i) => (
@@ -36,27 +47,34 @@ function CSSParticles() {
                         position: "absolute",
                         left: `${p.x}%`,
                         top: `${p.y}%`,
-                        width: `${p.size}px`,
+                        width:  `${p.size}px`,
                         height: `${p.size}px`,
                         borderRadius: "50%",
                         background: p.color,
-                        boxShadow: `0 0 ${p.size * 3}px ${p.color}`,
-                        animation: `cssParticleFloat ${p.duration}s ease-in-out ${p.delay}s infinite`,
+                        boxShadow: p.glow,
+                        animation: i % 2 === 0
+                            ? `cssFloat ${p.duration}s ease-in-out ${p.delay}s infinite`
+                            : `cssFloat ${p.duration}s ease-in-out ${p.delay}s infinite, cssTwinkle ${p.twinkle}s ease-in-out ${p.delay}s infinite`,
                     }}
                 />
             ))}
 
             <style>{`
-                @keyframes cssParticleFloat {
-                    0%   { transform: translateY(0px) scale(1);   opacity: 0.8; }
-                    50%  { transform: translateY(-18px) scale(1.2); opacity: 1;   }
-                    100% { transform: translateY(0px) scale(1);   opacity: 0.8; }
+                @keyframes cssFloat {
+                    0%   { transform: translateY(0px)   scale(1);    }
+                    50%  { transform: translateY(-30px) scale(1.15); }
+                    100% { transform: translateY(0px)   scale(1);    }
+                }
+                @keyframes cssTwinkle {
+                    0%, 100% { opacity: 0.9; }
+                    50%      { opacity: 0.3; }
                 }
             `}</style>
         </div>
     );
 }
 export { CSSParticles };
+
 
 export default class SceneErrorBoundary extends Component {
     constructor(props) {
