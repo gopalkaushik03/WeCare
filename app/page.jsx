@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, TrendingUp, Sparkles, Headphones } from "lucide-react";
 import SpotlightCard from "@/components/SpotlightCard";
 import SceneErrorBoundary from "@/components/SceneErrorBoundary";
+import { CSSParticles } from "@/components/SceneErrorBoundary";
 
 // Dynamically import Scene (R3F) - client-side only
 const Scene = dynamic(() => import("@/components/Scene"), {
@@ -17,22 +18,42 @@ const Scene = dynamic(() => import("@/components/Scene"), {
     ),
 });
 
+/** Returns true only if the browser has a working WebGL context. */
+function isWebGLAvailable() {
+    try {
+        const canvas = document.createElement("canvas");
+        return !!(
+            canvas.getContext("webgl2") ||
+            canvas.getContext("webgl") ||
+            canvas.getContext("experimental-webgl")
+        );
+    } catch {
+        return false;
+    }
+}
+
 export default function Home() {
     const [mounted, setMounted] = useState(false);
+    const [webglOk, setWebglOk] = useState(true); // optimistic — check after mount
 
     useEffect(() => {
+        setWebglOk(isWebGLAvailable());
         setMounted(true);
     }, []);
 
     return (
         <>
-            {/* Fixed 3D Background - Only render after mounting */}
+            {/* Fixed Background — 3D if WebGL works, CSS particles otherwise */}
             {mounted && (
                 <>
                     <div className="fixed inset-0 z-0 animate-subtle-gradient opacity-60 pointer-events-none" />
-                    <SceneErrorBoundary>
-                        <Scene />
-                    </SceneErrorBoundary>
+                    {webglOk ? (
+                        <SceneErrorBoundary>
+                            <Scene />
+                        </SceneErrorBoundary>
+                    ) : (
+                        <CSSParticles />
+                    )}
                 </>
             )}
 
