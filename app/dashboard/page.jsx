@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { useMood } from "@/context/MoodContext";
 import { useUser } from "@/context/UserContext";
 import { api } from "@/lib/api";
-import ThemeSwitcher from "@/components/ThemeSwitcher";
+
 import { ZenGarden, ThoughtShredder } from "@/components/Widgets";
 import SonicTherapy from "@/components/SonicTherapy";
 import SOSButton from "@/components/SOSButton";
@@ -99,9 +99,7 @@ export default function DashboardPage() {
                         Your safe space is ready.
                     </motion.p>
                 </div>
-                <div className="flex items-center gap-4">
-                    <ThemeSwitcher />
-                </div>
+
             </header>
 
             {/* Main Bento Grid */}
