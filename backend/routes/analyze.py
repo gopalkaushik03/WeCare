@@ -6,23 +6,42 @@ POST /api/v1/analyze — The main AI analysis endpoint.
 - Async Gemini call
 - Contextual safety disclaimer
 - Optionally fetches user history for longitudinal context
+- Auth is OPTIONAL: guests get AI analysis, logged-in users get longitudinal context
 """
 
 import logging
-from fastapi import APIRouter, Request, Depends, Query
+from fastapi import APIRouter, Request, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import Optional, List
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+import jwt
+import os
 
 from services.gemini_client import analyze_user_input
 from utils.safety import get_contextual_disclaimer
 from db import MONGODB_DB
-from services.auth_service import get_current_user
 
 log = logging.getLogger("wecare.analyze")
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
+
+# Optional bearer — does NOT raise 401 if token is missing
+_optional_bearer = HTTPBearer(auto_error=False)
+
+async def get_optional_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_optional_bearer),
+) -> Optional[str]:
+    """Returns user_id if a valid JWT is present, otherwise None (guest)."""
+    if not credentials:
+        return None
+    try:
+        secret = os.getenv("JWT_SECRET", "super-secret-key-for-local-dev-only")
+        payload = jwt.decode(credentials.credentials, secret, algorithms=["HS256"])
+        return payload.get("sub")
+    except Exception:
+        return None
 
 
 # -----------------------------------------------------------------
@@ -57,7 +76,7 @@ class AnalyzeResponse(BaseModel):
 async def analyze_mood(
     request: Request,
     body: AnalyzeRequest,
-    user_id: str = Depends(get_current_user),
+    user_id: Optional[str] = Depends(get_optional_user),
 ):
     """
     Analyzes mood and notes using Gemini AI with longitudinal context.
