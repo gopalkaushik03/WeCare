@@ -76,15 +76,15 @@ async def analyze_mood(
     if user_id:
         try:
             from db import get_client
-            from main import MONGODB_URI
-            if MONGODB_URI:
-                db = get_client()[MONGODB_DB]
-                cursor = db["mood_entries"].find(
-                    {"user_id": user_id},
-                    {"_id": 0, "date": 1, "mood": 1, "risk_level": 1, "emotional_themes": 1},
-                ).sort("created_at", -1).limit(5)
-                history = await cursor.to_list(5)
-                history.reverse()  # chronological order for the prompt
+            db = get_client()[MONGODB_DB]
+            cursor = db["mood_entries"].find(
+                {"user_id": user_id},
+                {"_id": 0, "date": 1, "mood": 1, "risk_level": 1, "emotional_themes": 1},
+            ).sort("created_at", -1).limit(5)
+            history = await cursor.to_list(5)
+            history.reverse()  # chronological order for the prompt
+        except RuntimeError:
+            log.warning("[ANALYZE] DB client not initialized.")
         except Exception as e:
             log.warning("[ANALYZE] Could not fetch history: %s", e)
 

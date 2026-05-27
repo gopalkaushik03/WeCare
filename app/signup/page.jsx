@@ -5,10 +5,11 @@ import { motion } from "framer-motion";
 import { ArrowLeft, User, Mail, Lock, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import AuroraBackground from "@/components/AuroraBackground";
-import { api } from "@/lib/api";
+import { useUser } from "@/context/UserContext";
 
 export default function SignupPage() {
     const router = useRouter();
+    const { signup } = useUser();
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -54,9 +55,8 @@ export default function SignupPage() {
                         setError("");
                         setIsLoading(true);
                         try {
-                            const result = await api.auth.signup(name, email, password);
-                            if (result.success && result.user.access_token) {
-                                localStorage.setItem("wc_token", result.user.access_token);
+                            const result = await signup(name, email, password);
+                            if (result.success) {
                                 router.push("/dashboard");
                             } else {
                                 setError(result.message || "Failed to create account");

@@ -5,10 +5,11 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Mail, Lock, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import AuroraBackground from "@/components/AuroraBackground";
-import { api } from "@/lib/api";
+import { useUser } from "@/context/UserContext";
 
 export default function LoginPage() {
     const router = useRouter();
+    const { login } = useUser();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -49,9 +50,8 @@ export default function LoginPage() {
                         setError("");
                         setIsLoading(true);
                         try {
-                            const result = await api.auth.login(email, password);
-                            if (result.success && result.user.access_token) {
-                                localStorage.setItem("wc_token", result.user.access_token);
+                            const result = await login(email, password);
+                            if (result.success) {
                                 router.push("/dashboard");
                             } else {
                                 setError(result.message || "Invalid email or password");

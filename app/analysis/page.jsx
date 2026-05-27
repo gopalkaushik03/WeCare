@@ -13,6 +13,30 @@ import { slideUp, staggerContainer } from "@/lib/motion";
 // The result is read from sessionStorage, set by mood/page.jsx BEFORE navigation.
 // This eliminates the double Gemini API call bug (Stage 1 fix).
 
+// CBT Technique Explanations
+const CBT_TECHNIQUES = {
+    socratic_questioning: {
+        name: "Socratic Questioning",
+        description: "Challenging negative or distorted thoughts by evaluating objective evidence."
+    },
+    behavioral_activation: {
+        name: "Behavioral Activation",
+        description: "Scheduling small, meaningful tasks to break the pattern of avoidance and low energy."
+    },
+    thought_defusion: {
+        name: "Thought Defusion",
+        description: "Observing thoughts from a detached perspective rather than accepting them as literal facts."
+    },
+    gratitude_pivot: {
+        name: "Gratitude Pivot",
+        description: "Redirecting attention towards appreciating elements of life that are working well."
+    },
+    self_compassion_break: {
+        name: "Self-Compassion Break",
+        description: "Treating yourself with kindness, understanding, and shared humanity during distress."
+    }
+};
+
 export default function AnalysisPage() {
     const router = useRouter();
     const [analysis, setAnalysis] = useState(null);
@@ -144,8 +168,20 @@ export default function AnalysisPage() {
                             <div className="bg-gradient-to-br from-cyan-500/20 to-blue-500/20 p-4 rounded-2xl">
                                 <Brain className="w-8 h-8 text-cyan-400" />
                             </div>
-                            <div className="space-y-3">
-                                <h2 className="text-xl font-bold text-white">Analysis Summary</h2>
+                            <div className="space-y-3 w-full">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                    <h2 className="text-xl font-bold text-white">Analysis Summary</h2>
+                                    {/* Emotional Theme Tags */}
+                                    {Array.isArray(analysis.emotional_themes) && analysis.emotional_themes.length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {analysis.emotional_themes.map((theme, idx) => (
+                                                <span key={idx} className="text-[10.5px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2.5 py-0.5 rounded-full">
+                                                    #{theme}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                                 <p className="text-zinc-300 leading-relaxed text-lg">
                                     {analysis.summary || "Unable to generate summary."}
                                 </p>
@@ -171,12 +207,24 @@ export default function AnalysisPage() {
                     {analysis.reframe && (
                         <MotionCard delay={0.2} className="bg-zinc-900 border-zinc-800">
                             <div className="space-y-4">
-                                <h3 className="text-xs font-bold uppercase tracking-widest text-amber-400 flex items-center gap-2">
-                                    <Lightbulb className="w-3 h-3" /> A Gentle Reframe
-                                </h3>
+                                <div className="flex justify-between items-start gap-2">
+                                    <h3 className="text-xs font-bold uppercase tracking-widest text-amber-400 flex items-center gap-2">
+                                        <Lightbulb className="w-3 h-3" /> A Gentle Reframe
+                                    </h3>
+                                    {analysis.reframe_technique && CBT_TECHNIQUES[analysis.reframe_technique] && (
+                                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                            {CBT_TECHNIQUES[analysis.reframe_technique].name}
+                                        </span>
+                                    )}
+                                </div>
                                 <p className="text-zinc-200 leading-relaxed italic border-l-2 border-amber-500/50 pl-4">
                                     &ldquo;{analysis.reframe}&rdquo;
                                 </p>
+                                {analysis.reframe_technique && CBT_TECHNIQUES[analysis.reframe_technique] && (
+                                    <p className="text-xs text-zinc-500 mt-2 font-medium">
+                                        <span className="font-semibold text-zinc-400">About the CBT method:</span> {CBT_TECHNIQUES[analysis.reframe_technique].description}
+                                    </p>
+                                )}
                             </div>
                         </MotionCard>
                     )}

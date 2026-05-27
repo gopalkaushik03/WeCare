@@ -10,32 +10,54 @@ export function UserProvider({ children }) {
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
 
-    useEffect(() => {
-        const fetchUser = async () => {
-            const token = localStorage.getItem("wc_token");
-            if (!token) {
-                setIsLoading(false);
-                return;
-            }
+    const fetchUser = React.useCallback(async () => {
+        const token = localStorage.getItem("wc_token");
+        if (!token) {
+            setUser(null);
+            setIsLoading(false);
+            return;
+        }
 
-            try {
-                const res = await api.auth.me();
-                if (res.success && res.user) {
-                    setUser(res.user);
-                } else {
-                    // Token might be invalid or expired
-                    localStorage.removeItem("wc_token");
-                    setUser(null);
-                }
-            } catch (err) {
-                console.error("Failed to fetch user context", err);
-            } finally {
-                setIsLoading(false);
+        try {
+            const res = await api.auth.me();
+            if (res.success && res.user) {
+                setUser(res.user);
+            } else {
+                localStorage.removeItem("wc_token");
+                setUser(null);
             }
-        };
-
-        fetchUser();
+        } catch (err) {
+            console.error("Failed to fetch user context", err);
+            localStorage.removeItem("wc_token");
+            setUser(null);
+        } finally {
+            setIsLoading(false);
+        }
     }, []);
+
+    useEffect(() => {
+        fetchUser();
+    }, [fetchUser]);
+
+    const login = async (email, password) => {
+        const result = await api.auth.login(email, password);
+        if (result.success && result.user.access_token) {
+            localStorage.setItem("wc_token", result.user.access_token);
+            await fetchUser();
+            return { success: true };
+        }
+        return result;
+    };
+
+    const signup = async (name, email, password) => {
+        const result = await api.auth.signup(name, email, password);
+        if (result.success && result.user.access_token) {
+            localStorage.setItem("wc_token", result.user.access_token);
+            await fetchUser();
+            return { success: true };
+        }
+        return result;
+    };
 
     const logout = () => {
         api.auth.logout();
@@ -44,7 +66,7 @@ export function UserProvider({ children }) {
     };
 
     return (
-        <UserContext.Provider value={{ user, setUser, isLoading, logout }}>
+        <UserContext.Provider value={{ user, setUser, isLoading, login, signup, logout, fetchUser }}>
             {children}
         </UserContext.Provider>
     );

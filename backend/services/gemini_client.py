@@ -208,7 +208,8 @@ async def analyze_user_input(user_data: dict, history: list[dict] | None = None)
     combined_text = f"{mood} {notes}"
     if is_crisis(combined_text):
         log.warning("Crisis pattern detected in user input — returning crisis response.")
-        return CRISIS_RESPONSE
+        import copy
+        return copy.deepcopy(CRISIS_RESPONSE)
 
     # 2. Fallback if client not ready
     if not client:

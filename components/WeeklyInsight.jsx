@@ -105,11 +105,11 @@ export default function WeeklyInsight() {
                                 </motion.div>
                             </motion.div>
 
-                            <div className="mt-12 text-center space-y-2">
+                            <div className="mt-12 text-center relative h-8 w-full">
                                 <motion.p
                                     animate={{ opacity: [0, 1, 1, 0] }}
                                     transition={{ duration: 4, repeat: Infinity, repeatDelay: 15 }}
-                                    className="text-xl font-medium text-white"
+                                    className="text-xl font-medium text-white absolute inset-x-0 top-0"
                                 >
                                     Inhale Deeply (4s)
                                 </motion.p>
@@ -117,7 +117,7 @@ export default function WeeklyInsight() {
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: [0, 0, 1, 1, 0] }}
                                     transition={{ duration: 19, repeat: Infinity, times: [0, 0.21, 0.22, 0.57, 0.58] }}
-                                    className="text-xl font-medium text-white absolute bottom-10 left-0 right-0"
+                                    className="text-xl font-medium text-white absolute inset-x-0 top-0"
                                 >
                                     Hold Breath (7s)
                                 </motion.p>
@@ -125,7 +125,7 @@ export default function WeeklyInsight() {
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: [0, 0, 1, 1, 0] }}
                                     transition={{ duration: 19, repeat: Infinity, times: [0, 0.58, 0.59, 0.99, 1] }}
-                                    className="text-xl font-medium text-white absolute bottom-10 left-0 right-0"
+                                    className="text-xl font-medium text-white absolute inset-x-0 top-0"
                                 >
                                     Exhale Slowly (8s)
                                 </motion.p>

@@ -45,7 +45,7 @@ if MONGODB_URI:
         async with db_lifespan(app):
             yield
 else:
-    print("[MAIN] ⚠️  MONGODB_URI not set — running without database persistence.")
+    print("[MAIN] WARNING: MONGODB_URI not set -- running without database persistence.")
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):

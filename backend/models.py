@@ -177,6 +177,10 @@ class UserCreate(BaseModel):
         return v.strip().lower()
 
 class UserLogin(BaseModel):
+    @field_validator("email")
+    @classmethod
+    def email_normalize(cls, v: str) -> str:
+        return v.strip().lower()
     email: str
     password: str
 
