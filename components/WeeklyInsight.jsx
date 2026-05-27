@@ -1,248 +1,269 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { Lightbulb, Quote, X, Sparkles, RefreshCw } from "lucide-react";
+import { Lightbulb, Quote, X, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// ─── Comeback / Motivational Quotes ────────────────────────────────────────
+// ─── 7 comeback / motivational quotes ──────────────────────────────────────
 const QUOTES = [
     {
         text: "You didn't come this far to only come this far.",
         author: "Unknown",
-        color: "from-violet-500/20 to-fuchsia-500/20",
-        accent: "#a78bfa",
+        accent: "#a78bfa",       // violet
+        glow: "rgba(167,139,250,0.15)",
+        tag: "Keep Going",
     },
     {
         text: "The comeback is always stronger than the setback.",
         author: "Unknown",
-        color: "from-cyan-500/20 to-blue-500/20",
-        accent: "#67e8f9",
+        accent: "#22d3ee",       // cyan
+        glow: "rgba(34,211,238,0.15)",
+        tag: "Resilience",
     },
     {
-        text: "Hard days are the best days because that's when champions are made.",
+        text: "Hard days are the best days — that's when champions are made.",
         author: "Gabby Douglas",
-        color: "from-amber-500/20 to-orange-500/20",
-        accent: "#fbbf24",
+        accent: "#fbbf24",       // amber
+        glow: "rgba(251,191,36,0.15)",
+        tag: "Champion",
     },
     {
         text: "Fall seven times, stand up eight.",
         author: "Japanese Proverb",
-        color: "from-emerald-500/20 to-teal-500/20",
-        accent: "#34d399",
+        accent: "#34d399",       // emerald
+        glow: "rgba(52,211,153,0.15)",
+        tag: "Perseverance",
     },
     {
         text: "Rock bottom became the solid foundation on which I rebuilt my life.",
         author: "J.K. Rowling",
-        color: "from-rose-500/20 to-pink-500/20",
-        accent: "#fb7185",
+        accent: "#fb7185",       // rose
+        glow: "rgba(251,113,133,0.15)",
+        tag: "Rebuild",
     },
     {
-        text: "It's not about how hard you hit. It's about how hard you can get hit and keep moving forward.",
-        author: "Rocky Balboa",
-        color: "from-indigo-500/20 to-purple-500/20",
-        accent: "#818cf8",
+        text: "You are allowed to be both a masterpiece and a work in progress.",
+        author: "Sophia Bush",
+        accent: "#818cf8",       // indigo
+        glow: "rgba(129,140,248,0.15)",
+        tag: "Growth",
     },
     {
-        text: "Every storm runs out of rain. Keep going.",
+        text: "Every storm runs out of rain. Every dark night turns into day.",
         author: "Maya Angelou",
-        color: "from-sky-500/20 to-cyan-500/20",
-        accent: "#38bdf8",
+        accent: "#38bdf8",       // sky
+        glow: "rgba(56,189,248,0.15)",
+        tag: "Hope",
     },
 ];
 
-// ─── Weekly Insights (time-aware) ──────────────────────────────────────────
+// ─── Time-aware weekly insight ──────────────────────────────────────────────
 function getInsight() {
-    const hour = new Date().getHours();
-    if (hour < 10) return {
+    const h = new Date().getHours();
+    if (h < 10) return {
         title: "Morning Clarity",
-        text: "Start your day with intention. A 5-minute focus session now sets the tone for the entire day.",
+        text: "Start with intention. A 5-minute focus session now sets the tone for the entire day.",
         tag: "Morning Ritual",
-        action: "Start session →",
+        cta: "Start session",
     };
-    if (hour > 20) return {
+    if (h > 20) return {
         title: "Wind Down Protocol",
-        text: "Disconnect from screens. A short breathing exercise now can improve your sleep quality by 30%.",
+        text: "Disconnect from screens. A breathing exercise now can improve your sleep quality by 30%.",
         tag: "Evening Wind-down",
-        action: "Try 4-7-8 →",
+        cta: "Try 4-7-8",
     };
     return {
         title: "The 4-7-8 Breathing Technique",
-        text: "Inhale for 4 seconds, hold for 7, and exhale for 8. This simple pattern reduces anxiety and helps you sleep better.",
-        tag: "Mindfulness Tip",
-        action: "Try it now →",
+        text: "Inhale 4s · hold 7s · exhale 8s. This simple pattern reduces anxiety and deepens sleep.",
+        tag: "Mindfulness",
+        cta: "Try it now",
     };
 }
 
 export default function WeeklyInsight() {
-    const [isFlipped, setIsFlipped] = useState(false);
-    const [quoteIdx, setQuoteIdx] = useState(0);
+    // Pick a random quote once on mount so it changes each visit/login
+    const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+    const [hovered, setHovered] = useState(false);
     const [isBreathing, setIsBreathing] = useState(false);
-    const [autoPlay, setAutoPlay] = useState(true);
-    const intervalRef = useRef(null);
     const insight = getInsight();
-    const quote = QUOTES[quoteIdx];
+    const timerRef = useRef(null);
 
-    // Auto-cycle quotes every 5s when not flipped
-    useEffect(() => {
-        if (autoPlay && !isFlipped) {
-            intervalRef.current = setInterval(() => {
-                setQuoteIdx((i) => (i + 1) % QUOTES.length);
-            }, 5000);
-        }
-        return () => clearInterval(intervalRef.current);
-    }, [autoPlay, isFlipped]);
-
-    const nextQuote = (e) => {
-        e.stopPropagation();
-        setAutoPlay(false);
-        setQuoteIdx((i) => (i + 1) % QUOTES.length);
+    // Slight delay before dismissing so quick mouse passes don't flicker
+    const handleMouseEnter = () => {
+        clearTimeout(timerRef.current);
+        setHovered(true);
     };
+    const handleMouseLeave = () => {
+        timerRef.current = setTimeout(() => setHovered(false), 120);
+    };
+
+    useEffect(() => () => clearTimeout(timerRef.current), []);
 
     return (
         <>
-            {/* ── Card container with perspective ── */}
+            {/* ── Card shell ─────────────────────────────────────── */}
             <div
-                className="h-full w-full"
-                style={{ perspective: "1000px" }}
-                onMouseEnter={() => setIsFlipped(true)}
-                onMouseLeave={() => setIsFlipped(false)}
+                className="relative h-full flex flex-col overflow-hidden select-none"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
             >
+                {/* Dynamic accent glow that matches the quote color */}
                 <motion.div
-                    animate={{ rotateY: isFlipped ? 180 : 0 }}
-                    transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
-                    style={{ transformStyle: "preserve-3d", position: "relative", height: "100%", width: "100%" }}
-                >
-                    {/* ══════════ FRONT — Motivational Quote ══════════ */}
-                    <div
-                        style={{
-                            backfaceVisibility: "hidden",
-                            WebkitBackfaceVisibility: "hidden",
-                            position: "absolute",
-                            inset: 0,
-                        }}
-                        className="h-full flex flex-col"
-                    >
-                        {/* Gradient glow background */}
+                    className="pointer-events-none absolute inset-0 rounded-2xl"
+                    animate={{ background: quote.glow }}
+                    transition={{ duration: 0.8 }}
+                    style={{ filter: "blur(20px)", opacity: 0.6 }}
+                />
+
+                {/* Shimmer border on hover */}
+                <motion.div
+                    className="pointer-events-none absolute inset-0 rounded-2xl"
+                    style={{
+                        border: "1px solid transparent",
+                        backgroundClip: "padding-box",
+                    }}
+                    animate={{
+                        boxShadow: hovered
+                            ? `0 0 0 1px ${quote.accent}55, 0 8px 40px ${quote.glow}`
+                            : `0 0 0 1px transparent`,
+                    }}
+                    transition={{ duration: 0.35 }}
+                />
+
+                {/* ── QUOTE LAYER (always visible) ────────────────── */}
+                <div className="relative z-10 flex flex-col h-full">
+                    {/* Tag pill */}
+                    <div className="flex items-center justify-between mb-4">
                         <motion.div
-                            key={quoteIdx + "-glow"}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.6 }}
-                            className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${quote.color} pointer-events-none`}
-                        />
-
-                        {/* Header */}
-                        <div className="flex items-center justify-between mb-3 relative z-10">
-                            <div className="flex items-center gap-2" style={{ color: quote.accent }}>
-                                <Sparkles className="w-3.5 h-3.5" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest">Comeback Quote</span>
-                            </div>
-                            {/* Dot indicators */}
-                            <div className="flex items-center gap-1">
-                                {QUOTES.map((_, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={(e) => { e.stopPropagation(); setAutoPlay(false); setQuoteIdx(i); }}
-                                        className="w-1.5 h-1.5 rounded-full transition-all duration-300"
-                                        style={{
-                                            background: i === quoteIdx ? quote.accent : "rgba(255,255,255,0.2)",
-                                            transform: i === quoteIdx ? "scale(1.4)" : "scale(1)",
-                                        }}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Quote body */}
-                        <div className="flex-1 flex flex-col justify-center relative z-10 overflow-hidden">
-                            <AnimatePresence mode="wait">
-                                <motion.div
-                                    key={quoteIdx}
-                                    initial={{ opacity: 0, y: 18 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -18 }}
-                                    transition={{ duration: 0.4, ease: "easeOut" }}
-                                >
-                                    {/* Big quote mark */}
-                                    <Quote
-                                        className="w-6 h-6 mb-2 opacity-40"
-                                        style={{ color: quote.accent }}
-                                    />
-                                    <p className="text-sm font-semibold text-white leading-relaxed mb-3"
-                                        style={{ textShadow: "0 1px 8px rgba(0,0,0,0.4)" }}>
-                                        "{quote.text}"
-                                    </p>
-                                    <p className="text-[10px] font-bold uppercase tracking-widest"
-                                        style={{ color: quote.accent, opacity: 0.8 }}>
-                                        — {quote.author}
-                                    </p>
-                                </motion.div>
-                            </AnimatePresence>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/10 relative z-10">
-                            <span className="text-[9px] text-white/30 uppercase tracking-widest">
-                                Hover for insight ✦
-                            </span>
-                            <button
-                                onClick={nextQuote}
-                                className="flex items-center gap-1 text-[10px] font-bold transition-all hover:scale-110 active:scale-95"
-                                style={{ color: quote.accent }}
-                            >
-                                <RefreshCw className="w-3 h-3" />
-                                Next
-                            </button>
-                        </div>
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest"
+                            style={{
+                                background: `${quote.accent}18`,
+                                color: quote.accent,
+                                border: `1px solid ${quote.accent}30`,
+                            }}
+                        >
+                            <Zap className="w-2.5 h-2.5" />
+                            {quote.tag}
+                        </motion.div>
+                        <span
+                            className="text-[9px] uppercase tracking-widest font-medium opacity-40"
+                            style={{ color: quote.accent }}
+                        >
+                            hover for insight
+                        </span>
                     </div>
 
-                    {/* ══════════ BACK — Weekly Insight ══════════ */}
-                    <div
-                        style={{
-                            backfaceVisibility: "hidden",
-                            WebkitBackfaceVisibility: "hidden",
-                            transform: "rotateY(180deg)",
-                            position: "absolute",
-                            inset: 0,
-                        }}
-                        className="h-full flex flex-col"
+                    {/* Big quote mark */}
+                    <Quote
+                        className="w-7 h-7 mb-1 opacity-20"
+                        style={{ color: quote.accent }}
+                    />
+
+                    {/* Quote text */}
+                    <p
+                        className="text-sm font-semibold leading-relaxed text-white flex-1"
+                        style={{ textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
                     >
-                        {/* Subtle amber glow */}
-                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/5 pointer-events-none" />
+                        {quote.text}
+                    </p>
 
-                        {/* Header */}
-                        <div className="flex items-center gap-2 mb-3 text-amber-400 relative z-10">
-                            <Lightbulb className="w-4 h-4" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest">Weekly Insight</span>
-                        </div>
+                    {/* Author */}
+                    <p
+                        className="mt-3 text-[11px] font-bold uppercase tracking-widest"
+                        style={{ color: quote.accent, opacity: 0.75 }}
+                    >
+                        — {quote.author}
+                    </p>
+                </div>
 
-                        {/* Content */}
-                        <div className="flex-1 flex flex-col justify-center relative z-10">
-                            <h3 className="text-base font-bold text-white mb-2 leading-snug">
-                                {insight.title}
-                            </h3>
-                            <p className="text-xs text-gray-300 leading-relaxed">
-                                {insight.text}
-                            </p>
-                        </div>
+                {/* ══ WEEKLY INSIGHT OVERLAY — slides up on hover ══════ */}
+                <AnimatePresence>
+                    {hovered && (
+                        <motion.div
+                            key="insight-overlay"
+                            initial={{ y: "100%", opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: "100%", opacity: 0 }}
+                            transition={{
+                                type: "spring",
+                                stiffness: 380,
+                                damping: 36,
+                                mass: 0.9,
+                            }}
+                            className="absolute inset-0 z-20 flex flex-col rounded-2xl overflow-hidden"
+                            style={{
+                                background:
+                                    "linear-gradient(160deg, rgba(15,15,25,0.97) 0%, rgba(20,20,35,0.97) 100%)",
+                                backdropFilter: "blur(24px) saturate(1.6)",
+                                WebkitBackdropFilter: "blur(24px) saturate(1.6)",
+                                border: `1px solid rgba(251,191,36,0.2)`,
+                                boxShadow: "0 -8px 40px rgba(251,191,36,0.1)",
+                            }}
+                        >
+                            {/* Top accent line */}
+                            <div
+                                className="h-0.5 w-full flex-shrink-0"
+                                style={{
+                                    background:
+                                        "linear-gradient(90deg, transparent, #fbbf24, transparent)",
+                                }}
+                            />
 
-                        {/* Footer */}
-                        <div className="mt-3 pt-3 border-t border-white/10 flex justify-between items-center relative z-10">
-                            <span className="text-[10px] text-slate-400 uppercase tracking-widest">
-                                {insight.tag}
-                            </span>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); setIsBreathing(true); }}
-                                className="text-xs font-bold text-amber-400 hover:text-amber-300 transition-all flex items-center gap-1 group"
-                            >
-                                {insight.action}
-                                <span className="group-hover:translate-x-1 transition-transform">→</span>
-                            </button>
-                        </div>
-                    </div>
-                </motion.div>
+                            <div className="flex flex-col h-full p-5">
+                                {/* Header */}
+                                <div className="flex items-center gap-2 mb-4">
+                                    <div
+                                        className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                                        style={{ background: "rgba(251,191,36,0.15)" }}
+                                    >
+                                        <Lightbulb className="w-4 h-4 text-amber-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] font-bold uppercase tracking-widest text-amber-400/60">
+                                            Weekly Insight
+                                        </p>
+                                        <p className="text-xs font-bold text-white/90 leading-none mt-0.5">
+                                            {insight.tag}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Divider */}
+                                <div className="w-full h-px bg-white/5 mb-4" />
+
+                                {/* Content */}
+                                <h3 className="text-sm font-bold text-white leading-snug mb-2">
+                                    {insight.title}
+                                </h3>
+                                <p className="text-xs text-white/55 leading-relaxed flex-1">
+                                    {insight.text}
+                                </p>
+
+                                {/* CTA */}
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.97 }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsBreathing(true);
+                                    }}
+                                    className="mt-4 w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
+                                    style={{
+                                        background:
+                                            "linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.1))",
+                                        border: "1px solid rgba(251,191,36,0.3)",
+                                        color: "#fbbf24",
+                                        boxShadow: "0 4px 20px rgba(251,191,36,0.1)",
+                                    }}
+                                >
+                                    {insight.cta} →
+                                </motion.button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
-            {/* ── Breathing Modal (unchanged, triggered from back side) ── */}
+            {/* ── Breathing Modal ──────────────────────────────────── */}
             <AnimatePresence>
                 {isBreathing && (
                     <motion.div
@@ -258,16 +279,19 @@ export default function WeeklyInsight() {
                         >
                             <button
                                 onClick={() => setIsBreathing(false)}
-                                className="absolute top-0 right-0 p-4 text-white/50 hover:text-white transition-colors"
+                                className="absolute top-0 right-0 p-4 text-white/40 hover:text-white transition-colors"
                             >
                                 <X className="w-6 h-6" />
                             </button>
 
+                            {/* Breathing glow */}
                             <motion.div
-                                animate={{ scale: [1, 1.5, 1.5, 1], opacity: [0.3, 0.6, 0.6, 0.3] }}
+                                animate={{ scale: [1, 1.5, 1.5, 1], opacity: [0.25, 0.55, 0.55, 0.25] }}
                                 transition={{ duration: 19, repeat: Infinity, times: [0, 0.21, 0.58, 1], ease: "easeInOut" }}
                                 className="absolute inset-0 bg-primary/20 rounded-full blur-3xl"
                             />
+
+                            {/* Circle */}
                             <motion.div
                                 animate={{ scale: [1, 1.3, 1.3, 1] }}
                                 transition={{ duration: 19, repeat: Infinity, times: [0, 0.21, 0.58, 1], ease: "easeInOut" }}
@@ -283,30 +307,25 @@ export default function WeeklyInsight() {
                                 </motion.div>
                             </motion.div>
 
+                            {/* Phase labels */}
                             <div className="mt-12 text-center relative h-8 w-full">
                                 <motion.p
                                     animate={{ opacity: [0, 1, 1, 0] }}
                                     transition={{ duration: 4, repeat: Infinity, repeatDelay: 15 }}
                                     className="text-xl font-medium text-white absolute inset-x-0 top-0"
-                                >
-                                    Inhale Deeply (4s)
-                                </motion.p>
+                                >Inhale Deeply (4s)</motion.p>
                                 <motion.p
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: [0, 0, 1, 1, 0] }}
                                     transition={{ duration: 19, repeat: Infinity, times: [0, 0.21, 0.22, 0.57, 0.58] }}
                                     className="text-xl font-medium text-white absolute inset-x-0 top-0"
-                                >
-                                    Hold Breath (7s)
-                                </motion.p>
+                                >Hold Breath (7s)</motion.p>
                                 <motion.p
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: [0, 0, 1, 1, 0] }}
                                     transition={{ duration: 19, repeat: Infinity, times: [0, 0.58, 0.59, 0.99, 1] }}
                                     className="text-xl font-medium text-white absolute inset-x-0 top-0"
-                                >
-                                    Exhale Slowly (8s)
-                                </motion.p>
+                                >Exhale Slowly (8s)</motion.p>
                             </div>
                         </div>
                     </motion.div>
